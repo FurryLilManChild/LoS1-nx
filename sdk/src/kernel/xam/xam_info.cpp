@@ -18,6 +18,7 @@
 #include <rex/system/kernel_state.h>
 #include <rex/system/user_module.h>
 #include <rex/system/xenumerator.h>
+#include <rex/system/xevent.h>
 #include <rex/system/xthread.h>
 #include <rex/system/xtypes.h>
 
@@ -31,6 +32,13 @@
 #include <rex/cvar.h>
 
 REXCVAR_DECLARE(uint32_t, user_language);  // defined in xam_user.cpp
+
+namespace rex::system {
+// los1-nx: the two discs' mounts (system/runtime.cpp SetupVfs).
+extern const char* const kDisc1MountPath;
+extern const char* const kDisc2MountPath;
+extern bool g_disc2_mounted;
+}  // namespace rex::system
 
 namespace rex {
 namespace kernel {
@@ -319,10 +327,25 @@ u32 XamLoaderGetDvdTrayState_entry(mapped_u32 out_state) {
   return X_STATUS_SUCCESS;
 }
 
-u32 XamSwapDisc_entry(u32 disc_number) {
-  // Stub for multi-disc games. Single-disc games (like Blue Dragon's reblue test)
-  // don't need this, but the game may look it up dynamically via XexGetProcedureAddress.
-  REXKRNL_DEBUG("XamSwapDisc({}) - stub, returning success", (uint32_t)disc_number);
+u32 XamSwapDisc_entry(u32 disc_number, u32 event_handle, u32 /*strings*/) {
+  // los1-nx (2026-10-26): the system's "insert disc N" step, done at once: game: and d: point at disc N's files
+  // (runtime.cpp SetupVfs mounts the second disc's folder), then the caller's event is set (Lords of Shadow's
+  // SwapDiscThread waits on it after a successful return).
+  const bool to_disc2 = disc_number == 2 && rex::system::g_disc2_mounted;
+  if (disc_number == 2 && !to_disc2)
+    REXKRNL_WARN("XamSwapDisc(2): no second disc folder (<game folder>_disc2); staying on disc 1");
+  const char* target = to_disc2 ? rex::system::kDisc2MountPath : rex::system::kDisc1MountPath;
+  if (auto* fs = REX_KERNEL_FS()) {
+    fs->UnregisterSymbolicLink("game:");
+    fs->UnregisterSymbolicLink("d:");
+    fs->RegisterSymbolicLink("game:", target);
+    fs->RegisterSymbolicLink("d:", target);
+  }
+  REXKRNL_INFO("XamSwapDisc({}): game: and d: now {}", (uint32_t)disc_number, target);
+  if (event_handle) {
+    if (auto ev = REX_KERNEL_OBJECTS()->LookupObject<rex::system::XEvent>(event_handle))
+      ev->Set(0, false);
+  }
   return X_STATUS_SUCCESS;
 }
 

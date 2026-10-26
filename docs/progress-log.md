@@ -34,7 +34,14 @@ Newest first. Each entry: what was done, what was found, what is next.
 - Mark's second console test: plays through the first level into the second ("pretty dang successful"; "good, not
   quite great", some stutter). Log: 37-53 fps in light scenes, 17-25 fps in the heavy ones with the GPU at 40-47 ms
   a frame (GPU-bound); 130 run-time uam compiles at about 70 ms each (the stutter; no deko3d_shaders.bin yet).
-- Next: the precompiled shader variants (deko3d_shaders.bin) from this run's log, then GPU time, then disc 2.
+- Shader variants for the console: 350, from the PC run's pipeline list (`out/deko3d_cache/deko3d_shaders.bin`), to be
+  merged with what the console compiled itself.
+- Disc 2: the game's SwapDiscThread (sub_82199600, XBoxSwapDisc.cpp) asks XamSwapDisc for the other disc, waits on
+  its event, then checks for `Disc.1` / `Disc.2` in the game folder. XamSwapDisc was a stub that never set the event.
+  Now `<game folder>_disc2` (or `game_data_root_disc2`) is mounted as `\Device\Cdrom1`, and XamSwapDisc points game:
+  and d: at the disc asked for and sets the event (`sdk/src/system/runtime.cpp`, `sdk/src/kernel/xam/xam_info.cpp`).
+  Not yet tested at the actual swap (late in the game).
+- Next: Mark's console run with the shader file; then GPU time.
 
 ## 2026-10-26: first PC boots
 

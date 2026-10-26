@@ -31,6 +31,14 @@
 #include <rex/thread.h>
 
 REXCVAR_DEFINE_STRING(game_data_root, "", "Runtime", "Override game data path");
+// los1-nx (2026-10-26): the second disc of a two-disc game (see SetupVfs).
+REXCVAR_DEFINE_STRING(game_data_root_disc2, "", "Runtime",
+                      "The second disc's files (default: the game data folder's name with _disc2 after it)");
+namespace rex::system {
+extern const char* const kDisc1MountPath = "\\Device\\Harddisk0\\Partition1";
+extern const char* const kDisc2MountPath = "\\Device\\Cdrom1";
+bool g_disc2_mounted = false;
+}  // namespace rex::system
 REXCVAR_DEFINE_STRING(user_data_root, "", "Runtime", "Override user data path");
 REXCVAR_DEFINE_STRING(update_data_root, "", "Runtime", "Override update data path");
 REXCVAR_DEFINE_STRING(cache_root, "", "Runtime", "Override shader cache path");
@@ -364,6 +372,22 @@ bool Runtime::SetupVfs() {
   file_system_->RegisterSymbolicLink("game:", mount_path);
   file_system_->RegisterSymbolicLink("d:", mount_path);
   REXSYS_DEBUG("  Registered symbolic links: game:, d:");
+
+  // los1-nx (2026-10-26): a second disc. Its files in <game_data_root>_disc2 (or game_data_root_disc2), mounted as
+  // \Device\Cdrom1; XamSwapDisc (xam_info.cpp) points game: and d: at it, or back at disc 1.
+  {
+    std::filesystem::path disc2 = REXCVAR_GET(game_data_root_disc2).empty()
+                                      ? std::filesystem::path(abs_game_root.string() + "_disc2")
+                                      : std::filesystem::path(REXCVAR_GET(game_data_root_disc2));
+    std::error_code ec;
+    if (std::filesystem::is_directory(disc2, ec)) {
+      auto disc2_device = std::make_unique<rex::filesystem::HostPathDevice>(rex::system::kDisc2MountPath, disc2, true);
+      if (disc2_device->Initialize() && file_system_->RegisterDevice(std::move(disc2_device))) {
+        rex::system::g_disc2_mounted = true;
+        REXSYS_INFO("[disc] disc 2 at {} (for XamSwapDisc)", disc2.string());
+      }
+    }
+  }
 
   // Mount update_data_root as update:\ if provided
   if (!update_data_root_.empty()) {
