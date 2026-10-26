@@ -117,6 +117,9 @@ $cfgArgs = @(
     # LoS1-nx (2026-10-26): no early alpha pass for now. Mark's first -Renut build: the translator's second run (the
     # early alpha copies) stopped at 98 % with no message, after the first run had built every shader.
     '-DBANJO_RENUT_EARLY_ALPHA=OFF',
+    # LoS1-nx (2026-10-26): no D3D12 shader code (Vulkan only, gpu.cmake RENUT_DXIL): 32 of the game's pixel shaders
+    # fail DXIL validation and stopped the shader step at 98 % (exit code 2).
+    '-DRENUT_DXIL=OFF',
     '-DCMAKE_POLICY_VERSION_MINIMUM=3.5'
 )
 

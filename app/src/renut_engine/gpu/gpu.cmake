@@ -148,6 +148,14 @@ endfunction()
 #     there into shader_cache.cpp (DXIL and SPIR-V, zstd-compressed).
 #  3. shader_cache.cpp is compiled into the executable.
 # ---------------------------------------------------------------------------
+# los1-nx (2026-10-26): RENUT_DXIL OFF builds the shader cache without D3D12 code (Vulkan's only) and the renderer
+# then always uses Vulkan. Lords of Shadow has 32 pixel shaders whose translation fails DXIL validation ("coord
+# uninitialized"); the translator counts that as a failure and stopped Mark's PC build (exit code 2 at 98 %).
+option(RENUT_DXIL "Renut's shader cache with D3D12 (DXIL) code on Windows" ON)
+if(WIN32 AND NOT RENUT_DXIL)
+    add_compile_definitions(RENUT_NO_DXIL=1)
+endif()
+
 function(renut_xenos_shader_cache TARGET)
     if(COMMAND banjo_renut_shader_cache_override)
         banjo_renut_shader_cache_override(${TARGET})
@@ -156,7 +164,7 @@ function(renut_xenos_shader_cache TARGET)
     set(recomp_prefix "${CMAKE_BINARY_DIR}/xenos_recomp")
     set(recomp_exe "${recomp_prefix}/build/XenosRecomp/XenosRecomp${CMAKE_EXECUTABLE_SUFFIX}")
     set(recomp_dxil ON)
-    if(NOT WIN32)
+    if(NOT WIN32 OR NOT RENUT_DXIL)
         set(recomp_dxil OFF)
     endif()
 

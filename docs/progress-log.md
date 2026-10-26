@@ -17,6 +17,9 @@ Newest first. Each entry: what was done, what was found, what is next.
 - Mark's first `-Renut` build: the shader translator's second run (Renut's early alpha copies) stopped at 98 % with
   no message; the first run had built all 2,006 (32 pixel shaders failed DXIL validation, "coord uninitialized": no
   D3D12 code for them, the Vulkan code is there). The early alpha pass is off in `build_pc.ps1` for now.
+- Mark's PC had never pulled (its branch had no upstream: `git pull` did nothing); with the code in place the shader
+  step still stopped at 98 %: XenosRecomp exits with code 2 when any shader fails, and the 32 DXIL validation
+  failures count. The PC build now makes Vulkan code only (`RENUT_DXIL=OFF`, the renderer then always uses Vulkan).
 - Next: Mark's PC build with `-Renut` and a boot test.
 
 ## 2026-10-26: first PC boots
