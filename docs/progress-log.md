@@ -28,7 +28,10 @@ Newest first. Each entry: what was done, what was found, what is next.
 - First Switch build (`tools/linux/build_switch.sh` in the cloud session, about 1 h 20 min on 2 cores): 2,006 shaders
   in the deko3d package (32 kept without the GLSL passes: uam failed on their rewrite). No asset pack on the Switch:
   the game files are 6.7 GB and a FAT32 card holds no file over 4 GB, so game_root/ is read as it is.
-- Next: Mark's first console test.
+- Mark's first console test: "Switch: app initialization failed" at once (no Vulkan driver for the emulated GPU): the
+  Switch configure never turned `LOS_RENUT_RENDERER` on, so the NRO had no Renut and fell back to the emulated GPU.
+  `build_switch.sh configure` now turns it on; rebuilt (282 steps).
+- Next: Mark's second console test.
 
 ## 2026-10-26: first PC boots
 

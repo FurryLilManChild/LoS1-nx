@@ -81,7 +81,7 @@ configure)
   cd "$ROOT"
   cmake -S app -B out/nx -G Ninja -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_TOOLCHAIN_FILE="$ROOT/tools/switch/cmake/switch-devkitA64.cmake" -DDEVKITPRO=$L -DREXSDK_DIR="$ROOT/sdk" \
-    -DREXGLUE_SWITCH_NO_NVK=ON -DREXGLUE_SWITCH_NVK_SDK="$ROOT/out/switch_sdk" \
+    -DLOS_RENUT_RENDERER=ON -DREXGLUE_SWITCH_NO_NVK=ON -DREXGLUE_SWITCH_NVK_SDK="$ROOT/out/switch_sdk" \
     -DBANJO_DEKO3D_SPIRV_CROSS="$ROOT/out/deko3d_tools/spirv-cross-build/spirv-cross" \
     -DBANJO_DEKO3D_UAM="$ROOT/out/deko3d_tools/uam-build/uam"
   ;;
