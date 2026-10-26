@@ -1,0 +1,6 @@
+# Code the automatic function discovery misses. Every entry carries its evidence.
+
+[functions]
+# First validation run (rexglue codegen, 2026-10-25): a direct unconditional branch (a tail call) to an address that
+# discovery had not assigned to any function ("target not in any function"). No size imposed.
+"0x8273DBE8" = { }  # from 0x8274176C

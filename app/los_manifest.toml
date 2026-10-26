@@ -1,0 +1,22 @@
+# ReXGlue recompilation manifest for Castlevania: Lords of Shadow (Xbox 360 disc, title 4B4E0809, default.xex).
+#
+# default.xex: image base 0x82000000, image size 0x00F00000, entry 0x824B9BD0, XEX version 0.0.0.3, disc 1 of 2,
+# built with XDK 2.0.11626. The same executable is on both discs.
+# SHA-256 of the supported default.xex: 0287bbd803d36d3da59750df4de69b2e040b4f8604d85ddd528d9027a6dbb46b
+#
+# Run from this folder: rexglue codegen los_manifest.toml
+
+[project]
+name = "los"
+sdk_version = "0.10.0"
+# Your own game files: disc 1 extracted (tools/extract_iso.py), with default.xex at its root.
+# Nothing from the game is stored in this repository.
+game_root = "../assets/game_root"
+
+[entrypoint]
+file_path = "../assets/game_root/default.xex"
+out_directory_path = "generated/default"
+# overrides.toml: written by hand, code the automatic function discovery misses, each entry with its evidence.
+includes = ["overrides.toml"]
+
+# No [[modules]]: the disc has a single executable and no guest DLLs.

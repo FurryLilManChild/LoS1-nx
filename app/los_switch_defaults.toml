@@ -1,0 +1,20 @@
+# Castlevania: Lords of Shadow - Mirror of Fate HD for the Switch: the fixed settings, compiled into the NRO
+# (app/CMakeLists.txt, src/los_app.h BuiltInConfig) and applied before the SD card's los.toml, which holds the
+# player's options (app/los_switch.toml) and may override any key here for testing.
+# Test builds: logging on (logs/ next to the NRO), so the console's runs can be read.
+
+# Game and paths
+license_mask = 1
+# Renut's Direct3D-level renderer on deko3d (the NRO has no Vulkan driver); its game shaders are built into the NRO.
+sa2_renderer = "renut"
+renut_gpu_backend = "deko3d"
+sa2_render_height_handheld = 720
+sa2_render_height_docked = 720
+# The game files as one pack file on the SD card (game_root.nxpack), built from game_root/ on the first start.
+asset_pack = true
+asset_pack_build = true
+audio_mute = false
+
+# Logging on for the test builds
+log_level = "info"
+log_to_file = true

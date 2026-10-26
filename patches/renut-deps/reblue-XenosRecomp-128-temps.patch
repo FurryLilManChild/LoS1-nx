@@ -1,0 +1,24 @@
+--- a/XenosRecomp/shader_recompiler.cpp
++++ b/XenosRecomp/shader_recompiler.cpp
+@@ -2391,7 +2391,11 @@
+         out += "\n";
+     }
+ 
+-    bool printedRegisters[32]{};
++    // mof-nx (2026-10-23): all 128 of the Xenos's temporary registers, not 32. Mirror of Fate HD's shaders (its 3DS
++    // texture combiner emulation) use up to r56; with 32 declared, DXC failed 5 of its 104 shaders on "use of
++    // undeclared identifier 'r32'"... DXC drops the ones a shader does not use.
++    constexpr size_t kTempRegisters = 128;
++    bool printedRegisters[kTempRegisters]{};
+ 
+     uint32_t interpolatorCount = (shader->interpolatorInfo >> 5) & 0x1F;
+ 
+@@ -2442,7 +2446,7 @@
+         out += "\n";
+     }
+ 
+-    for (size_t i = 0; i < 32; i++)
++    for (size_t i = 0; i < kTempRegisters; i++)
+     {
+         if (!printedRegisters[i])
+         {

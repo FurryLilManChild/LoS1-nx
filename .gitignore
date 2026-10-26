@@ -1,0 +1,62 @@
+# Nothing from the game goes into this repository: no game files, no code translated from it,
+# nothing built from it. Each player makes these from their own copy.
+assets/
+app/generated/
+*.xex
+*.bshdat
+*.pkg
+*.iso
+*.packed
+*.bik
+*.bctex
+*.ogg
+*.mesp
+*.mesp.idx
+*.nxpack
+*.nxidx
+image.bin
+*_strings.txt
+
+# Build output
+out/
+build/
+*.nro
+*.nsp
+*.elf
+
+# Logs from local runs (attach to issues instead)
+logs/
+*.log
+!docs/**/*.log
+
+# Editor and OS clutter
+.vs/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Python caches
+__pycache__/
+*.pyc
+
+# SDK (sa2-nx's fork of ReXGlue 0.10) build output and third-party sources: tools/fetch_thirdparty.py fetches them;
+# only the files the fork changed are tracked (the same rules as sa2-nx's .gitignore)
+/sdk/out/
+/sdk/thirdparty/*
+!/sdk/thirdparty/CMakeLists.txt
+!/sdk/thirdparty/FFmpeg
+/sdk/thirdparty/FFmpeg/*
+!/sdk/thirdparty/FFmpeg/config.h
+!/sdk/thirdparty/FFmpeg/config_switch_aarch64.h
+!/sdk/thirdparty/FFmpeg/config_masseffect_wmv3.h
+!/sdk/thirdparty/FFmpeg/libavcodec
+/sdk/thirdparty/FFmpeg/libavcodec/*
+!/sdk/thirdparty/FFmpeg/libavcodec/mdct_template.c
+!/sdk/thirdparty/FFmpeg/libavcodec/fft_template.c
+!/sdk/thirdparty/ffmpeg-overlay
+/sdk/thirdparty/ffmpeg-overlay/*
+!/sdk/thirdparty/ffmpeg-overlay/codec_list.c
+
+# Renut's third-party code, fetched from sa2-nx by tools/fetch_renut_deps.py
+/app/thirdparty/

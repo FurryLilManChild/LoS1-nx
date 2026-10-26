@@ -1,0 +1,14 @@
+# Settings read at startup (ReXGlue cvars). The build copies this file next to the executable when there is none
+# there yet; edit the copy. Any setting can also be given on the command line (--name=value).
+
+# XBLA titles ask the system for their license; 0 means "trial". Your purchased copy is the full version.
+license_mask = 1
+
+# Stage 1: draw with ReXGlue's emulated Xenos GPU.
+gpu_plugin = "xenos"
+
+# "info" for normal runs, "debug" or "trace" when chasing a crash.
+log_level = "info"
+
+# Test runs start muted. Set to false to hear the game.
+audio_mute = true

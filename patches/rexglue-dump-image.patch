@@ -1,0 +1,23 @@
+diff --git a/src/system/xex_module.cpp b/src/system/xex_module.cpp
+index 0726516..ac9735d 100644
+--- a/src/system/xex_module.cpp
++++ b/src/system/xex_module.cpp
+@@ -1,3 +1,5 @@
++#include <cstdio>
++#include <cstdlib>
+ /**
+  ******************************************************************************
+  * Xenia : Xbox 360 Emulator Research Project                                 *
+@@ -913,6 +915,12 @@ bool XexModule::Load(const std::string_view name, const std::string_view path, c
+     }
+   }
+ 
++  if (const char* dump = std::getenv("MOF_DUMP_IMAGE")) {
++    if (FILE* f = std::fopen(dump, "wb")) {
++      std::fwrite(data, 1, xex_security_info()->image_size, f);
++      std::fclose(f);
++    }
++  }
+   // Note: caller will have to call LoadContinue once it's determined whether a
+   // patch file exists or not!
+   return true;
