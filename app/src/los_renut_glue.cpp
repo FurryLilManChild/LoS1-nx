@@ -181,11 +181,6 @@ SA2_ENHANCEMENT(g_vsync_relaxed, sa2_vsync_relaxed, sa2::enh::kNonCpu, true,
 
 extern "C" const bool g_banjo_store_cards = false;
 
-namespace sa2::enh {
-void CodegenChecksInit() {}
-void CodegenChecksReport(int) {}
-void FormsSelfCheck() {}
-}  // namespace sa2::enh
 
 #if !REX_PLATFORM_SWITCH
 extern "C" void RexSwitchPerfCount(unsigned) {}

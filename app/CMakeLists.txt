@@ -24,6 +24,7 @@ include(cmake/rexglue.cmake)
 set(LOS_SOURCES
     src/main.cpp
     src/los_diag.cpp
+    src/los_stubs.cpp
     # From sa2-nx, used by Renut's renderer: the enhancement switches and the console's render mode.
     src/cpu/sa2_enhancements.cpp
     src/me/sa2_render_mode.cpp

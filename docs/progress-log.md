@@ -11,3 +11,6 @@ Newest first. Each entry: what was done, what was found, what is next.
   `default.xex`.
 - Repository made from mof-nx's tree (the SDK fork, the app, Renut's renderer, the tools), renamed for this game.
   Renut's renderer is off (`LOS_RENUT_RENDERER`) until its Direct3D map is made for this XDK.
+- Linux build (clang 20, emulated GPU): compiles; the link needed sa2-nx's self-check stubs outside the renderer's
+  glue (`app/src/los_stubs.cpp`). A 60 s run with only `default.xex` in the game folder: no crash; the game names a
+  `SwapDiscThread`, tries to create `D:\filelist.2Bpack` on the (read-only) game disc, then to open it (not found).
