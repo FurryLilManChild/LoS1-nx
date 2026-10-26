@@ -24,7 +24,8 @@ Newest first. Each entry: what was done, what was found, what is next.
   Fate. Cause: this Direct3D builds the declaration of an FVF draw inside the device (+0x3050) and binds that, so the
   renderer had no vertex layout for the 2D draws. Each element list now gets a registered copy: the Linux run shows
   the loading screen and the title screen.
-- Next: Mark's PC test of the title screen and the first level.
+- Mark's PC test (Vulkan): "looks and plays well"; the Travel Book menus no longer flicker.
+- Next: the first Switch build (`tools/linux/build_switch.sh`).
 
 ## 2026-10-26: first PC boots
 
