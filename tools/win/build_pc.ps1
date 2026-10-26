@@ -4,10 +4,12 @@
 # Usage (from C:\LoS1-nx): powershell -ExecutionPolicy Bypass -File tools\win\build_pc.ps1 [-Jobs N] [-Clean]
 #   -Jobs   parallel compile jobs (default: half the logical CPUs, at most 8; each recompiled file needs ~1-2 GB RAM)
 #   -Clean  delete the build folder first
+#   -Renut  also build Renut's renderer (LOS_RENUT_RENDERER; not yet mapped to this game)
 
 param(
     [int]$Jobs = 0,
-    [switch]$Clean
+    [switch]$Clean,
+    [switch]$Renut
 )
 
 $ErrorActionPreference = 'Stop'
@@ -93,8 +95,11 @@ if (-not (Test-Path (Join-Path $repo 'app\thirdparty\plume\CMakeLists.txt')) -or
         python (Join-Path $repo 'tools\fetch_renut_deps.py')
     }
 }
+# LoS1-nx: the shader dump is Mirror of Fate's (.bshdat files) and only Renut's renderer needs it, which is off until
+# its Direct3D map is made for this game (app/CMakeLists.txt LOS_RENUT_RENDERER). Lords of Shadow keeps its shaders
+# in its .packed archives: a dumper of its own comes with the renderer. -Renut runs this step.
 $shaderDump = Join-Path $repo 'out\renut_shader_dump'
-if (-not (Test-Path (Join-Path $shaderDump 'manifest.csv'))) {
+if ($Renut -and -not (Test-Path (Join-Path $shaderDump 'manifest.csv'))) {
     Step "Extracting the game's shaders" 'shader_dump.log' {
         python -m pip install --user --quiet --disable-pip-version-check xxhash
         python (Join-Path $repo 'tools\los_dump_shaders.py') --assets (Join-Path $repo 'assets\game_root') --out $shaderDump
@@ -108,6 +113,7 @@ $cfgArgs = @(
     '-DCMAKE_C_COMPILER=clang', '-DCMAKE_CXX_COMPILER=clang++',
     '-DCMAKE_C_FLAGS=-march=x86-64-v2', '-DCMAKE_CXX_FLAGS=-march=x86-64-v2',
     '-DREXGLUE_ENABLE_TRACY=OFF',
+    "-DLOS_RENUT_RENDERER=$(if ($Renut) { 'ON' } else { 'OFF' })",
     '-DCMAKE_POLICY_VERSION_MINIMUM=3.5'
 )
 
