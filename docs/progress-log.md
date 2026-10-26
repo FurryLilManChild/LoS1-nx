@@ -31,7 +31,10 @@ Newest first. Each entry: what was done, what was found, what is next.
 - Mark's first console test: "Switch: app initialization failed" at once (no Vulkan driver for the emulated GPU): the
   Switch configure never turned `LOS_RENUT_RENDERER` on, so the NRO had no Renut and fell back to the emulated GPU.
   `build_switch.sh configure` now turns it on; rebuilt (282 steps).
-- Next: Mark's second console test.
+- Mark's second console test: plays through the first level into the second ("pretty dang successful"; "good, not
+  quite great", some stutter). Log: 37-53 fps in light scenes, 17-25 fps in the heavy ones with the GPU at 40-47 ms
+  a frame (GPU-bound); 130 run-time uam compiles at about 70 ms each (the stutter; no deko3d_shaders.bin yet).
+- Next: the precompiled shader variants (deko3d_shaders.bin) from this run's log, then GPU time, then disc 2.
 
 ## 2026-10-26: first PC boots
 
