@@ -2,6 +2,20 @@
 
 Newest first. Each entry: what was done, what was found, what is next.
 
+## 2026-10-26: Renut's renderer mapped to this game
+
+- Mark's first play (emulated GPU): the first level plays through; only the Travel Book menus flicker (the emulated
+  GPU's "invalid texture fetch constant" warnings).
+- Renut's renderer mapped to this Direct3D (XDK 2.0.11626): 41 functions, 3 data words and every device offset
+  ([d3d-map.md](d3d-map.md)).
+- Shader extractor for the .packed archives (`tools/los_dump_shaders.py`): 2,006 shaders from both discs, every one
+  the game used at its title screen on the Linux test.
+- Linux runs (lavapipe) found and fixed four things this game does that Mirror of Fate does not: the render thread's
+  wait for the display's flip count, the ring space query, the device's own vertex declaration, predicated tiling
+  ([renderer.md](renderer.md)). The game now runs with the renderer to its 3D title scene without a crash, but the
+  frames captured there are black; whether that is lavapipe or the renderer is for Mark's PC test.
+- Next: Mark's PC build with `-Renut` and a boot test.
+
 ## 2026-10-26: first PC boots
 
 - Mark's first build stopped at Mirror of Fate's shader dump step (no .bshdat files: "no inputs"). The dump and

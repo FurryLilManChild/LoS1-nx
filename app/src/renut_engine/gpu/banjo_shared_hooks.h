@@ -5,9 +5,9 @@
 
 #include <rex/ppc.h>
 
-extern "C" void renut_native_sub_826F8AA8(PPCContext& ctx, uint8_t* base);  // AllocateInlineData
-extern "C" void renut_native_sub_826F2B60(PPCContext& ctx, uint8_t* base);  // CBlocker::Check
-extern "C" void renut_native_sub_826DDBF0(PPCContext& ctx, uint8_t* base);  // D3DDevice_BeginVertices
-extern "C" void renut_native_sub_826DE0B0(PPCContext& ctx, uint8_t* base);  // D3DDevice_DrawVerticesUP
-extern "C" void renut_native_sub_826DE6D8(PPCContext& ctx, uint8_t* base);  // D3DDevice_DrawVertices
-extern "C" void renut_native_sub_826DEAF0(PPCContext& ctx, uint8_t* base);  // D3DDevice_DrawIndexedVertices
+extern "C" void renut_native_sub_824A3D30(PPCContext& ctx, uint8_t* base);  // AllocateInlineData
+extern "C" void renut_native_sub_8249A408(PPCContext& ctx, uint8_t* base);  // CBlocker::Check
+extern "C" void renut_native_sub_82900FB0(PPCContext& ctx, uint8_t* base);  // D3DDevice_BeginVertices
+extern "C" void renut_native_sub_82901448(PPCContext& ctx, uint8_t* base);  // D3DDevice_DrawVerticesUP
+extern "C" void renut_native_sub_82901490(PPCContext& ctx, uint8_t* base);  // D3DDevice_DrawVertices
+extern "C" void renut_native_sub_82901880(PPCContext& ctx, uint8_t* base);  // D3DDevice_DrawIndexedVertices

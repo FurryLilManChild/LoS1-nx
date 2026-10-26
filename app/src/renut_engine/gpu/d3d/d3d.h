@@ -225,8 +225,8 @@ static_assert(sizeof(ControlPacket) == 48);
 
 // Public D3DDevice (0x2B00 bytes in N&B's XDK) followed by the CDevice-private
 // tail of the allocation Direct3D_CreateDevice makes: 0x6080 bytes in SA2's
-// (sub_826F36D0 allocates 24704, aligned 128; N&B 0x5E00).
-constexpr u32 kDeviceAllocSize = 0x6080;
+// (sub_8249AB48 allocates 24704, aligned 128; N&B 0x5E00).
+constexpr u32 kDeviceAllocSize = 0x5F00;  // los1-nx: LoS (Direct3D_CreateDevice sub_8249AB48); SA2/MoF 0x6080
 constexpr u32 kDeviceAlignment = 0x80;
 
 struct Device {
@@ -251,10 +251,10 @@ struct Device {
   u8 m_TessellatorPacket[84];         // +0x2964
   u8 m_MiscPacket[152];               // +0x29B8
   u8 m_PointPacket[32];               // +0x2A50
-  u8 m_MaxAnisotropy[26];             // +0x2A70
-  u8 m_ZFilter[26];                   // +0x2A8A
-  u8 pad_2AA4[0x2B00 - 0x2AA4];       // +0x2AA4
-  u8 private_[kDeviceAllocSize - 0x2B00];  // +0x2B00  CDevice private state
+  // los1-nx: LoS (XDK 2.0.11626) keeps its anisotropy and Z filter arrays later (+0x2F44, +0x2F92, read by
+  // its SetSamplerState code), and its private state starts at +0x2A80; nothing here reads them.
+  u8 pad_2A70[0x2A80 - 0x2A70];       // +0x2A70
+  u8 private_[kDeviceAllocSize - 0x2A80];  // +0x2A80  CDevice private state
 };
 static_assert(sizeof(Device) == kDeviceAllocSize);
 static_assert(offsetof(Device, m_pRing) == 0x30);
@@ -273,28 +273,44 @@ static_assert(offsetof(Device, m_ControlPacket) == 0x2934);
 static_assert(offsetof(Device, m_TessellatorPacket) == 0x2964);
 static_assert(offsetof(Device, m_MiscPacket) == 0x29B8);
 static_assert(offsetof(Device, m_PointPacket) == 0x2A50);
-static_assert(offsetof(Device, m_MaxAnisotropy) == 0x2A70);
-static_assert(offsetof(Device, m_ZFilter) == 0x2A8A);
 
 // CDevice-private fields Direct3D_CreateDevice initialises (byte offsets into
 // the allocation, from its decompilation at 0x8264DF28).
-// sa2-nx: SA2's sub_8270E520 and sub_826F36D0 (N&B 10888, 10892, 23980).
-constexpr u32 kDeviceOffsetCreationThreadId = 11016;  // GetCurrentThreadId()
-constexpr u32 kDeviceOffsetIsTitleProcess = 11020;    // KeGetCurrentProcessType() == 2
-constexpr u32 kDeviceOffsetBehaviorFlags = 24392;     // Direct3D_CreateDevice arg 4
+// sa2-nx: SA2's sub_824AD9F8 and sub_8249AB48 (N&B 10888, 10892, 23980).
+constexpr u32 kDeviceOffsetCreationThreadId = 10888;  // los1-nx: LoS +0x2A88 (SA2/MoF 11016)
+    // GetCurrentThreadId()
+constexpr u32 kDeviceOffsetIsTitleProcess = 10892;  // los1-nx: LoS +0x2A8C (SA2/MoF 11020)
+    // KeGetCurrentProcessType() == 2
+constexpr u32 kDeviceOffsetBehaviorFlags = 24200;  // los1-nx: LoS +0x5E88 (SA2/MoF 24392)
+    // Direct3D_CreateDevice arg 4
 
 // Bound objects the Set* calls store in the CDevice-private area (guest VAs).
-// sa2-nx: SA2's "is the resource bound" test (sub_826E25A0) reads every one of
-// these but the strides (sub_826DDBF0, BeginVertices). N&B's in brackets.
-constexpr u32 kDeviceOffsetVertexDeclaration = 12240;  // SetVertexDeclaration [0x2E2C]
-constexpr u32 kDeviceOffsetIndexBuffer = 12812;        // SetIndices [0x3094]
-constexpr u32 kDeviceOffsetRenderTargets = 12816;      // SetRenderTarget, [4] [0x3098]
-constexpr u32 kDeviceOffsetDepthStencil = 12832;       // SetDepthStencilSurface [0x30A8]
-constexpr u32 kDeviceOffsetStreamSources = 12836;      // SetStreamSource, [16] [0x30AC]
-constexpr u32 kDeviceOffsetStreamStrides = 12904;      // SetStreamSource, u8[16], stride / 4 [0x30F0]
-constexpr u32 kDeviceOffsetTextures = 12920;           // SetTexture, [kTextureFetchSlots] [0x3100]
-constexpr u32 kDeviceOffsetPixelShader = 13068;        // SetPixelShader [0x3194]
-constexpr u32 kDeviceOffsetVertexShader = 13072;       // SetVertexShader [0x3198]
+// sa2-nx: SA2's "is the resource bound" test (sub_824A1D68) reads every one of
+// these but the strides (sub_82900FB0, BeginVertices). N&B's in brackets.
+constexpr u32 kDeviceOffsetVertexDeclaration = 11992;  // los1-nx: LoS +0x2ED8 (SA2/MoF 12240)
+    // SetVertexDeclaration [0x2E2C]
+// los1-nx: the device's own vertex declaration (an empty D3DVertexDeclaration header InitializeApiState builds at
+// +0x3050, sub_824AD2F8; SA2/MoF +0x3118, N&B +0x2FA0). Lords of Shadow draws with it bound (the first Linux boot,
+// 2026-10-26: "Draw dropped: vertex declaration 4003BCD0", the device at 40038C80), and no hook ever sees it made:
+// a draw takes it as no declaration (the shader's own fetches). The title device's address of it (device.cpp).
+constexpr u32 kDeviceOffsetDefaultDeclaration = 0x3050;
+inline u32 g_default_declaration_va = 0;
+constexpr u32 kDeviceOffsetIndexBuffer = 12612;  // los1-nx: LoS +0x3144 (SA2/MoF 12812)
+    // SetIndices [0x3094]
+constexpr u32 kDeviceOffsetRenderTargets = 12616;  // los1-nx: LoS +0x3148 (SA2/MoF 12816)
+    // SetRenderTarget, [4] [0x3098]
+constexpr u32 kDeviceOffsetDepthStencil = 12632;  // los1-nx: LoS +0x3158 (SA2/MoF 12832)
+    // SetDepthStencilSurface [0x30A8]
+constexpr u32 kDeviceOffsetStreamSources = 12636;  // los1-nx: LoS +0x315C (SA2/MoF 12836)
+    // SetStreamSource, [16] [0x30AC]
+constexpr u32 kDeviceOffsetStreamStrides = 12704;  // los1-nx: LoS +0x31A0 (SA2/MoF 12904)
+    // SetStreamSource, u8[16], stride / 4 [0x30F0]
+constexpr u32 kDeviceOffsetTextures = 12720;  // los1-nx: LoS +0x31B0 (SA2/MoF 12920)
+    // SetTexture, [kTextureFetchSlots] [0x3100]
+constexpr u32 kDeviceOffsetPixelShader = 12868;  // los1-nx: LoS +0x3244 (SA2/MoF 13068)
+    // SetPixelShader [0x3194]
+constexpr u32 kDeviceOffsetVertexShader = 12872;  // los1-nx: LoS +0x3248 (SA2/MoF 13072)
+    // SetVertexShader [0x3198]
 // In m_TessellatorPacket, which holds registers 0x2280 on: VGT_HOS_CNTL
 // (tessellation mode in bits 0-1: 0 discrete, 1 continuous, 2 adaptive) and
 // the float VGT_HOS_MAX_TESS_LEVEL / VGT_HOS_MIN_TESS_LEVEL.
@@ -307,28 +323,44 @@ constexpr u32 kDeviceOffsetMinTessellationLevel = 0x2980;
 // predicated tiling (Z and render).
 // sa2-nx: 13084 by the +376 of the fields around it (N&B 0x31A4); SA2 never
 // tiles, and the renderer reads it only while tiling (PredicatedTile).
-constexpr u32 kDeviceOffsetPredication = 13084;
+constexpr u32 kDeviceOffsetPredication = 12884;  // los1-nx: LoS +0x3254 (SA2/MoF 13084)
 // D3DCommandBuffer being recorded (BeginCommandBuffer sets, End clears).
-// sa2-nx: SA2's AllocateInlineData (sub_826F8AA8) reads it (N&B 13516).
-constexpr u32 kDeviceOffsetCommandBuffer = 13920;
+// sa2-nx: SA2's AllocateInlineData (sub_824A3D30) reads it (N&B 13516).
+constexpr u32 kDeviceOffsetCommandBuffer = 13728;  // los1-nx: LoS +0x35A0 (SA2/MoF 13920)
 // The leading part of the device the draw, clear and resolve paths read (up
 // to and including kDeviceOffsetPredication); a copy of it stands in for the
 // device when a recorded command buffer is replayed.
-constexpr u32 kDeviceSnapshotSize = 13088;  // sa2-nx (N&B 0x31A8)
+constexpr u32 kDeviceSnapshotSize = 12888;  // los1-nx: LoS 0x3258 (SA2/MoF 13088; N&B 0x31A8)
 static_assert(kDeviceOffsetVertexShader + 4 <= kDeviceSnapshotSize);
 static_assert(kDeviceOffsetPredication + 4 <= kDeviceSnapshotSize);
 // m_pRing the inline end of BeginVertices / BeginIndexedVertices restores.
-// sa2-nx: SA2's BeginVertices (sub_826DDBF0) stores it, and the game's 11
+// sa2-nx: SA2's BeginVertices (sub_82900FB0) stores it, and the game's 11
 // inline ends load it (N&B 0x3484).
-constexpr u32 kDeviceOffsetVerticesRingEnd = 13844;
-// Swap bookkeeping (D3DDevice_Swap 0x82287590; SA2's sub_826E11F0, which
-// also sets the pending flag in SynchronizeToPresentationInterval sub_826E0D30).
-constexpr u32 kDeviceOffsetSwapCount = 16968;        // [0x40B0]
-constexpr u32 kDeviceOffsetFenceTag = 11036;         // current fence tag [0x2A9C]
-constexpr u32 kDeviceOffsetSwapFenceTag = 11056;     // fence tag at the last Swap [0x2AB0]
-constexpr u32 kDeviceOffsetPresentFenceTag = 15344;  // fence tag of the last presented frame [0x3A5C]
-constexpr u32 kDeviceOffsetSwapFlags = 11069;        // [0x2ABD]
+constexpr u32 kDeviceOffsetVerticesRingEnd = 13652;  // los1-nx: LoS +0x3554 (SA2/MoF 13844)
+// Swap bookkeeping (D3DDevice_Swap 0x82287590; SA2's sub_824AF2F8, which
+// also sets the pending flag in SynchronizeToPresentationInterval sub_824AEEC8).
+// los1-nx: the swaps the display has shown (Direct3D's vertical blank handler sub_824AEB18 counts one up for each
+// flip it makes; SA2/MoF +0x4250) and the vertical blanks (the same handler; SA2/MoF +0x4238). Lords of Shadow's render
+// thread (sub_82591FF8) waits after each Swap until the shown count reaches the swap count, on an event its vertical
+// blank callback sets (sub_825913E0, at device +16756). Renut's device has no hardware path, so no interrupt handler
+// ever runs (the first Linux boot, 2026-10-26: the game stopped at its loading screen with its render thread in that
+// wait): the Swap hook counts the frame shown at once (device.cpp), and the pacing paces it.
+constexpr u32 kDeviceOffsetShownSwapCount = 16784;
+constexpr u32 kDeviceOffsetVBlankCount = 16760;
+constexpr u32 kDeviceOffsetSwapCount = 16776;  // los1-nx: LoS +0x4188 (SA2/MoF 16968)
+    // [0x40B0]
+constexpr u32 kDeviceOffsetFenceTag = 10908;  // los1-nx: LoS +0x2A9C (SA2/MoF 11036)
+    // current fence tag [0x2A9C]
+constexpr u32 kDeviceOffsetSwapFenceTag = 10928;  // los1-nx: LoS +0x2AB0 (SA2/MoF 11056)
+    // fence tag at the last Swap [0x2AB0]
+constexpr u32 kDeviceOffsetPresentFenceTag = 15152;  // los1-nx: LoS +0x3B30 (SA2/MoF 15344)
+    // fence tag of the last presented frame [0x3A5C]
+constexpr u32 kDeviceOffsetSwapFlags = 10941;  // los1-nx: LoS +0x2ABD (SA2/MoF 11069)
+    // [0x2ABD]
 constexpr u8 kSwapFlagPending = 0x10;
+
+// los1-nx: the viewport D3DDevice_SetViewport keeps (x, y, width, height, min z, max z; SA2/MoF +0x32E0, N&B 0x3168).
+constexpr u32 kDeviceOffsetViewport = 0x3218;
 
 constexpr u32 kMaxStreams = 16;
 constexpr u32 kMaxRenderTargets = 4;

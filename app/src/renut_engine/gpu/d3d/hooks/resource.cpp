@@ -46,8 +46,8 @@ using namespace renut::gpu;
 
 // N&B's XMemFree (0x822399D8), its own allocator (not D3D code): for the
 // memory of resources N&B's code allocated itself. sa2-nx: SA2's XMemFree
-// (sub_82447D48, what SA2's D3DResource_Destroy calls).
-REX_IMPORT(__imp__sub_82447D48, GameXMemFree, void(u32, u32));
+// (sub_824B9E48, what SA2's D3DResource_Destroy calls).
+REX_IMPORT(__imp__sub_824B9E48, GameXMemFree, void(u32, u32));
 // The kernel's physical memory, as XPhysicalAlloc / XPhysicalFree use it.
 REX_IMPORT(__imp__MmAllocatePhysicalMemoryEx, MmAllocatePhysicalMemoryEx,
            u32(u32, u32, u32, u32, u32, u32));
@@ -1692,8 +1692,8 @@ u32 AddRefResource(u32 resource) {
 // queued before that uses them, then SA2's own D3DResource_Destroy waits for the resource's fence (through the hooked
 // BlockOnFence: the render thread is then past it) and frees it.
 
-// void D3DResource_Destroy(D3DResource*) [sub_826E2F68; N&B 0x822084F0]
-BANJO_RENUT_HOOK_RAW(sub_826E2F68) {
+// void D3DResource_Destroy(D3DResource*) [sub_824A26A0; N&B 0x822084F0]
+BANJO_RENUT_HOOK_RAW(sub_824A26A0) {
   const u32 resource = ctx.r3.u32;
   render_thread::Queue([resource] {
     ReleaseHostSurfaceLocked(resource);
@@ -1701,5 +1701,5 @@ BANJO_RENUT_HOOK_RAW(sub_826E2F68) {
     ReleaseGuestShaderLocked(resource);
     ReleaseGuestDeclarationLocked(resource);
   });
-  __imp__sub_826E2F68(ctx, base);
+  __imp__sub_824A26A0(ctx, base);
 }

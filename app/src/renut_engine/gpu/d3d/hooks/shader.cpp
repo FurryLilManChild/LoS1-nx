@@ -447,8 +447,8 @@ void D3DVertexShader_Bind_hook(u32 shader_va, u32 /*flags*/, u32 declaration_va,
 // ---------------------------------------------------------------------------
 // sa2-nx (2026-10-20): SA2's hooks (N&B's addresses in brackets)
 // ---------------------------------------------------------------------------
-// SA2's shader objects stay the game's: its D3DDevice_CreateVertexShader / CreatePixelShader (sub_826E9D28 /
-// sub_826E9AB8) copy the container into the object and call XGRegisterVertexShader / XGRegisterPixelShader on it
+// SA2's shader objects stay the game's: its D3DDevice_CreateVertexShader / CreatePixelShader (sub_8249E490 /
+// sub_8249E2A8) copy the container into the object and call XGRegisterVertexShader / XGRegisterPixelShader on it
 // (the same object layout as N&B's: the container at +0x368 / +0x28, the physical part's pointer at +0x20 / +0x18).
 // So the two XGRegister functions are the hooks: SA2's own code first, then the host side keyed by the container's
 // hash (RegisterGuestShader). The vertex declarations stay the game's too: the host side is kept per object.
@@ -472,24 +472,24 @@ void RegisterGuestDeclaration(u32 declaration_va, const GuestVertexElement *elem
 
 }  // namespace
 
-// void XGRegisterVertexShader(D3DVertexShader*, void *pPhysicalPart) [sub_826E9C30; N&B 0x8264E7B8]
-BANJO_RENUT_HOOK_RAW(sub_826E9C30) {
+// void XGRegisterVertexShader(D3DVertexShader*, void *pPhysicalPart) [sub_8249E398; N&B 0x8264E7B8]
+BANJO_RENUT_HOOK_RAW(sub_8249E398) {
   const u32 shader = ctx.r3.u32, physical = ctx.r4.u32;
-  __imp__sub_826E9C30(ctx, base);
+  __imp__sub_8249E398(ctx, base);
   RegisterGuestShader(shader, physical, false);
 }
 
-// void XGRegisterPixelShader(D3DPixelShader*, void *pPhysicalPart) [sub_826E6B18; N&B 0x8264E670]
-BANJO_RENUT_HOOK_RAW(sub_826E6B18) {
+// void XGRegisterPixelShader(D3DPixelShader*, void *pPhysicalPart) [sub_8249C8C0; N&B 0x8264E670]
+BANJO_RENUT_HOOK_RAW(sub_8249C8C0) {
   const u32 shader = ctx.r3.u32, physical = ctx.r4.u32;
-  __imp__sub_826E6B18(ctx, base);
+  __imp__sub_8249C8C0(ctx, base);
   RegisterGuestShader(shader, physical, true);
 }
 
-// D3DVertexDeclaration *D3DDevice_CreateVertexDeclaration(const D3DVERTEXELEMENT9*) [sub_826E70C0; N&B 0x8264EA90]
-BANJO_RENUT_HOOK_RAW(sub_826E70C0) {
+// D3DVertexDeclaration *D3DDevice_CreateVertexDeclaration(const D3DVERTEXELEMENT9*) [sub_8249CD90; N&B 0x8264EA90]
+BANJO_RENUT_HOOK_RAW(sub_8249CD90) {
   const u32 elements_va = ctx.r3.u32;
-  __imp__sub_826E70C0(ctx, base);
+  __imp__sub_8249CD90(ctx, base);
   const u32 declaration = ctx.r3.u32;
   if (const auto *elements = declaration ? GuestPtr<const GuestVertexElement>(elements_va) : nullptr)
     RegisterGuestDeclaration(declaration, elements);

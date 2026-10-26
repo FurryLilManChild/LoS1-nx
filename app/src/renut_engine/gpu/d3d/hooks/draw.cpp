@@ -576,7 +576,7 @@ void D3DDevice_SetPixelShader_hook(u32 device, u32 shader) {
 // Clear and Resolve: the host work is queued from the device as it is at the call (the same snapshot N&B's hooks
 // take), then SA2's own function does the device work N&B's hooks did natively (d3d_native.h is N&B's layout): its
 // packets go into the ring sink, its inline data into the scratch (device.cpp), its fences through the hooked
-// BlockOnFence and KickOff. SA2's Clear (sub_826DD4A0) calls ClearF once per rect, and the game calls ClearF directly
+// BlockOnFence and KickOff. SA2's Clear (sub_8249A238) calls ClearF once per rect, and the game calls ClearF directly
 // too, so ClearF is the hook.
 
 namespace {
@@ -603,14 +603,14 @@ void QueueHostResolve(u32 device, u32 flags, const ClearRect *rect, u32 dest_tex
 
 }  // namespace
 
-BANJO_RENUT_HOOK_SHARED(sub_826DE6D8, D3DDevice_DrawVertices_hook);  // D3DDevice_DrawVertices [0x8222C7A0]
-BANJO_RENUT_HOOK_SHARED(sub_826DEAF0, D3DDevice_DrawIndexedVertices_hook);  // D3DDevice_DrawIndexedVertices [0x826567C8]
-BANJO_RENUT_HOOK_SHARED(sub_826DE0B0, D3DDevice_DrawVerticesUP_hook);  // D3DDevice_DrawVerticesUP [0x8222E520]
-BANJO_RENUT_HOOK_SHARED(sub_826DDBF0, D3DDevice_BeginVertices_hook);  // D3DDevice_BeginVertices [0x8222CC50]
+BANJO_RENUT_HOOK_SHARED(sub_82901490, D3DDevice_DrawVertices_hook);  // D3DDevice_DrawVertices [0x8222C7A0]
+BANJO_RENUT_HOOK_SHARED(sub_82901880, D3DDevice_DrawIndexedVertices_hook);  // D3DDevice_DrawIndexedVertices [0x826567C8]
+BANJO_RENUT_HOOK_SHARED(sub_82901448, D3DDevice_DrawVerticesUP_hook);  // D3DDevice_DrawVerticesUP [0x8222E520]
+BANJO_RENUT_HOOK_SHARED(sub_82900FB0, D3DDevice_BeginVertices_hook);  // D3DDevice_BeginVertices [0x8222CC50]
 
 // void D3DDevice_ClearF(D3DDevice*, DWORD Flags, const D3DRECT *pRect, const D3DVECTOR4 *pColor, float Z,
-//     DWORD Stencil) [sub_826DD368; N&B 0x822811A0]: Z in f1 (r7's slot), Stencil in r8.
-BANJO_RENUT_HOOK_RAW(sub_826DD368) {
+//     DWORD Stencil) [sub_8249A110; N&B 0x822811A0]: Z in f1 (r7's slot), Stencil in r8.
+BANJO_RENUT_HOOK_RAW(sub_8249A110) {
   const u32 device = ctx.r3.u32, flags = ctx.r4.u32, rect_va = ctx.r5.u32, color_va = ctx.r6.u32;
   ClearRect rect;
   const bool has_rect = rect_va && ReadRect(rect_va, rect);
@@ -620,16 +620,16 @@ BANJO_RENUT_HOOK_RAW(sub_826DD368) {
   los_copies_begin(base, device);  // mof-nx (2026-10-24): the targets as they are now (mof_resource_copies.cpp)
   QueueHostClear(device, flags, has_rect ? &rect : nullptr, color, float(ctx.f1.f64), ctx.r8.u32);
   los_copies_end(base);
-  __imp__sub_826DD368(ctx, base);
+  __imp__sub_8249A110(ctx, base);
 }
 
 // void D3DDevice_Resolve(D3DDevice*, DWORD Flags, const D3DRECT *pSourceRect, D3DBaseTexture *pDestTexture,
 //     const D3DPOINT *pDestPoint, UINT DestLevel, UINT DestSliceOrFace, const D3DVECTOR4 *pClearColor, float ClearZ,
-//     DWORD ClearStencil, const D3DRESOLVE_PARAMETERS *pParameters) [sub_826EFAA0; N&B 0x8222D6C8]: ClearZ in f1,
-// ClearStencil and pParameters in the caller's argument words at +92 and +100 (sub_826EFAA0 reads them there). Every
+//     DWORD ClearStencil, const D3DRESOLVE_PARAMETERS *pParameters) [sub_824AC870; N&B 0x8222D6C8]: ClearZ in f1,
+// ClearStencil and pParameters in the caller's argument words at +92 and +100 (sub_824AC870 reads them there). Every
 // resolve of SA2 comes here: the game's, the Present's and Direct3D's own (sub_825645A0, the core, has no other
 // caller).
-BANJO_RENUT_HOOK_RAW(sub_826EFAA0) {
+BANJO_RENUT_HOOK_RAW(sub_824AC870) {
   const u32 device = ctx.r3.u32, flags = ctx.r4.u32, rect_va = ctx.r5.u32, dest_texture = ctx.r6.u32;
   const u32 point_va = ctx.r7.u32, dest_level = ctx.r8.u32, dest_slice = ctx.r9.u32, color_va = ctx.r10.u32;
   const u32 clear_stencil = LoadU32(ctx.r1.u32 + 92);
@@ -648,5 +648,54 @@ BANJO_RENUT_HOOK_RAW(sub_826EFAA0) {
   QueueHostResolve(device, flags, has_rect ? &rect : nullptr, dest_copy, dest_x, dest_y, dest_level, dest_slice,
                    color_va, float(ctx.f1.f64), clear_stencil);
   los_copies_end(base);
-  __imp__sub_826EFAA0(ctx, base);
+  __imp__sub_824AC870(ctx, base);
+}
+
+// los1-nx (2026-10-26): Lords of Shadow renders its 3D scenes with predicated tiling (two 1280x384 tiles of a 1280x720
+// frame; Mirror of Fate and SA2 never tile). Its own Direct3D does the tiling: BeginTiling records the tiles and the
+// tile-sized surfaces, the draws go out once, predicated per tile, and EndTiling resolves each tile (through the
+// hooked Resolve). As N&B's hooks above do, the render thread gets the tiles first, so the surfaces bound until
+// EndTiling are backed by targets covering every tile (SetTilingExtentLocked) and a draw predicated to one tile is
+// placed in it; the game's own functions then do the device work. Before this the second tile's resolves did not fit
+// their 1280x384 source and the lower part of the frame was never drawn (the first Linux boot with frames,
+// 2026-10-26: "resolve into B53A0200 not done (does not fit)").
+// void D3DDevice_BeginTiling(D3DDevice*, DWORD Flags, DWORD Count, const D3DRECT *pTileRects, const D3DVECTOR4*,
+//     float ClearZ, DWORD ClearStencil) [sub_824AE280: it stores Count at +12924 and the rects at +12928; N&B 0x822788A0]
+BANJO_RENUT_HOOK_RAW(sub_824AE280) {
+  const u32 device = ctx.r3.u32, count = ctx.r5.u32, rects_va = ctx.r6.u32;
+  if (!IsRecordingCommandBuffer(device)) {
+    std::vector<ClearRect> tiles;
+    for (u32 i = 0; i < count && i < 16; ++i) {
+      ClearRect rect;
+      if (!ReadRect(rects_va + i * 16, rect))
+        break;
+      tiles.push_back(rect);
+    }
+    u32 width = 0, height = 0;
+    for (const ClearRect &rect : tiles) {
+      width = std::max(width, u32(rect.x2));
+      height = std::max(height, u32(rect.y2));
+    }
+    FlushDeferredVertices(device);
+    render_thread::Queue([tiles, width, height] {
+      SetTilingExtentLocked(width, height);
+      SetTilesLocked(tiles.data(), u32(tiles.size()));
+    });
+  }
+  __imp__sub_824AE280(ctx, base);
+}
+
+// HRESULT D3DDevice_EndTiling(D3DDevice*, DWORD ResolveFlags, const D3DRECT*, D3DBaseTexture*, const D3DVECTOR4*,
+//     float ClearZ, DWORD ClearStencil, const D3DRESOLVE_PARAMETERS*) [sub_824AE5F0; N&B 0x82212328]: the game's own
+// (its per-tile resolves come through the Resolve hook, from the full-size targets), then the tiles end.
+BANJO_RENUT_HOOK_RAW(sub_824AE5F0) {
+  const u32 device = ctx.r3.u32;
+  __imp__sub_824AE5F0(ctx, base);
+  if (!IsRecordingCommandBuffer(device)) {
+    FlushDeferredVertices(device);
+    render_thread::Queue([] {
+      SetTilingExtentLocked(0, 0);
+      SetTilesLocked(nullptr, 0);
+    });
+  }
 }

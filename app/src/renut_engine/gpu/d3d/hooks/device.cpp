@@ -90,40 +90,50 @@ constexpr u32 kRingDataSize = 1u << 20;
 
 // CDevice-private state Direct3D_CreateDevice (0x8264DF28) sets up, as byte
 // offsets into the device allocation. sa2-nx (2026-10-20): SA2's (d3d.h),
-// read from its Direct3D_CreateDevice sub_826F36D0, sub_8270E520, sub_8270E590
-// and the hardware path sub_8270EAB8; N&B's in brackets.
+// read from its Direct3D_CreateDevice sub_8249AB48, sub_824AD9F8, sub_824ADCD0
+// and the hardware path sub_824ADA68; N&B's in brackets.
 // Byte whose 0x80 bit marks a device without GPU hardware (its device-type-2
 // path sets it); D3D's code skips hardware work for it.
-constexpr u32 kDeviceOffsetFlags = 11068;  // [10940]
+constexpr u32 kDeviceOffsetFlags = 10940;  // los1-nx: LoS (SA2/MoF 11068)
+    // [10940]
 constexpr u8 kDeviceFlagNoHardware = 0x80;
 // Byte whose 0x2 bit makes CDevice::SetFence (0x82278528) write each fence's
 // completion value itself instead of waiting for the GPU to. The title device
 // runs without it once created: its fences complete on the render thread.
-constexpr u32 kDeviceOffsetFlags2 = 11069;  // [10941]
+constexpr u32 kDeviceOffsetFlags2 = 10941;  // los1-nx: LoS (SA2/MoF 11069)
+    // [10941]
 constexpr u8 kDeviceFlagImmediateFences = 0x02;
 // Pointer to the completed-fence word IsFencePending / BlockOnFence read.
-constexpr u32 kDeviceOffsetFenceCompletion = 11024;  // [10896]
+constexpr u32 kDeviceOffsetFenceCompletion = 10896;  // los1-nx: LoS (SA2/MoF 11024)
+    // [10896]
 // Nonzero while a KickOff is in progress (BlockOnFence does not kick then).
-// sa2-nx: the word SA2's CDevice::BlockOnFence (sub_826F8748) tests [13232].
-constexpr u32 kDeviceOffsetInKickOff = 13600;
+// sa2-nx: the word SA2's CDevice::BlockOnFence (sub_824A3E18) tests [13232].
+constexpr u32 kDeviceOffsetInKickOff = 13408;  // los1-nx: LoS (SA2/MoF 13600)
 // Side buffer (0x12C0 bytes) every device gets.
-constexpr u32 kDeviceOffsetSideBuffer = 17136;  // [16728]
+constexpr u32 kDeviceOffsetSideBuffer = 16944;  // los1-nx: LoS (SA2/MoF 17136)
+    // [16728]
 constexpr u32 kSideBufferSize = 0x12C0;
 // Set to -1 by the device-type-2 path.
-constexpr u32 kDeviceOffsetsMinusOne[] = {21968, 21972, 15340};  // [21560, 21564, 14936]
+constexpr u32 kDeviceOffsetsMinusOne[] = {21776, 21780, 15148};  // los1-nx: LoS (SA2/MoF 21968, 21972, 15340)
+    // [21560, 21564, 14936]
 constexpr u32 kDeviceTypeNoHardware = 2;
 // Copied from the global qword at 0x82F39B38 into every device.
-constexpr u32 kDeviceOffsetGlobalQword = 11008;  // [10880]
-constexpr u32 kGlobalQwordVa = 0x8298aa68;  // [0x82F39B38]
+constexpr u32 kDeviceOffsetGlobalQword = 10880;  // los1-nx: LoS (SA2/MoF 11008)
+    // [10880]
+constexpr u32 kGlobalQwordVa = 0x82CC1E58;  // los1-nx: LoS (sub_824AD9F8; MoF 0x8298AA68)
+    // [0x82F39B38]
 // Hardware-path fields: two critical sections, QueryPerformanceFrequency and
 // its reciprocal as floats, and 41 words set to -1.
-constexpr u32 kDeviceOffsetCriticalSection0 = 15348;  // [14944]
-constexpr u32 kDeviceOffsetCriticalSection1 = 15376;  // [14972]
-constexpr u32 kDeviceOffsetPerfFrequency = 21996;  // [21588]
-constexpr u32 kDeviceOffsetTitleMinusOne = 23380;
+constexpr u32 kDeviceOffsetCriticalSection0 = 15156;  // los1-nx: LoS (SA2/MoF 15348)
+    // [14944]
+constexpr u32 kDeviceOffsetCriticalSection1 = 15184;  // los1-nx: LoS (SA2/MoF 15376)
+    // [14972]
+constexpr u32 kDeviceOffsetPerfFrequency = 21804;  // los1-nx: LoS (SA2/MoF 21996)
+    // [21588]
+constexpr u32 kDeviceOffsetTitleMinusOne = 23188;  // los1-nx: LoS (SA2/MoF 23380)
 // Import slot holding the address of the kernel's VdGlobalDevice variable.
-// sa2-nx: SA2's (sub_8270EAB8 stores the title device there) [0x820007FC].
-constexpr u32 kVdGlobalDeviceImportSlot = 0x82000884;
+// sa2-nx: SA2's (sub_824ADA68 stores the title device there) [0x820007FC].
+constexpr u32 kVdGlobalDeviceImportSlot = 0x8200085C;  // los1-nx: LoS (sub_824ADA68; xboxkrnl ordinal 0x1BE)
 
 constexpr u32 kE_OUTOFMEMORY = 0x8007000Eu;
 
@@ -865,7 +875,8 @@ void D3DDevice_RunCommandBuffer_hook(u32 device_va, u32 command_buffer,
 // The frame goes to the render thread, which presents it; the game thread
 // goes on with the next one, waiting only when it is more than
 // render_thread::kMaxFramesAhead ahead.
-constexpr u32 kSa2DeviceOffsetGammaRamp = 15408;  // sa2-nx: SA2's +0x3A9C (the +404 block)
+constexpr u32 kSa2DeviceOffsetGammaRamp = 15216;  // los1-nx: LoS (SA2/MoF 15408)
+    // sa2-nx: SA2's +0x3A9C (the +404 block)
 
 // sa2-nx (2026-10-20): the SDK's core layout (system/xthread.cpp).
 REXCVAR_DEFINE_BOOL(sa2_renut_core_layout, true, "SA2/Renderer",
@@ -880,6 +891,16 @@ void D3DDevice_Swap_hook(u32 device_va, u32 front_buffer_va, u32 /*parameters*/)
   // mof-nx (2026-10-24): the front buffer as the copy that stands for its texture's memory, the one the resolves
   // write (the game makes its own front buffers, in headers it may reuse).
   const u32 front_buffer = los_texture_copy(front_buffer_va);
+  {
+    // los1-nx: the first Swaps' front buffers in the log (which texture the frame is presented from).
+    static uint32_t logged = 0;
+    if (logged < 4) {
+      ++logged;
+      const auto *w = GuestPtr<const be_u32>(front_buffer_va);
+      RGPU_INFO("[los] Swap: front buffer {:08X} (as {:08X}), words {:08X} {:08X} {:08X} {:08X}", front_buffer_va,
+                front_buffer, w ? u32(w[0]) : 0, w ? u32(w[7]) : 0, w ? u32(w[8]) : 0, w ? u32(w[9]) : 0);
+    }
+  }
   // sa2-nx (2026-10-20, sa2_renut_core_layout, the Switch): once, the guest main thread (SA2's game and drawing thread,
   // about a core of work in City Escape) alone on core 0, the other guest threads on cores 1-2 (preferring 2: the
   // render thread is pinned to core 1 at a higher priority). Before, every guest thread could run on any core, and at
@@ -918,11 +939,14 @@ void D3DDevice_Swap_hook(u32 device_va, u32 front_buffer_va, u32 /*parameters*/)
       return *reinterpret_cast<be_u32 *>(device + offset);
     };
     word(d3d::kDeviceOffsetSwapCount) = u32(word(d3d::kDeviceOffsetSwapCount)) + 1;
+    // los1-nx: shown at once, a vertical blank later (d3d.h).
+    word(d3d::kDeviceOffsetShownSwapCount) = u32(word(d3d::kDeviceOffsetSwapCount));
+    word(d3d::kDeviceOffsetVBlankCount) = u32(word(d3d::kDeviceOffsetVBlankCount)) + 1;
     const u32 fence_tag = word(d3d::kDeviceOffsetFenceTag);
     word(d3d::kDeviceOffsetSwapFenceTag) = fence_tag;
     word(d3d::kDeviceOffsetPresentFenceTag) = fence_tag;
     device[d3d::kDeviceOffsetSwapFlags] &= u8(~d3d::kSwapFlagPending);
-    // sa2-nx (2026-10-20): the display gamma ramp SA2's SetGammaRamp keeps in the device (sub_826DA7C0: +15408, 768
+    // sa2-nx (2026-10-20): the display gamma ramp SA2's SetGammaRamp keeps in the device (sub_82497E28: +15408, 768
     // words; N&B's +0x3A9C), which the original Swap writes to the display controller's table, goes to the
     // scan-out (backend/present.cpp, sa2_renut_gamma_ramp).
     if (REXCVAR_GET(sa2_renut_gamma_ramp))
@@ -1293,23 +1317,23 @@ void SetFence(u32 device_va) {
 // SA2's addresses (each read from SA2's code; N&B's in brackets). What differs:
 //   - Creation: SA2's own Direct3D_CreateDevice builds a device without hardware (its type-2 path: the device block,
 //     XenonGpu_Initialize and InitializeApiState, natively in N&B's hook), then the title device gets what the
-//     hardware path (sub_8270EAB8) gives it apart from the GPU: critical sections, VdGlobalDevice, a fence word, the
-//     timer frequency, and SA2's own InitializePresentationParameters (sub_8270E838: the automatic back buffer and
+//     hardware path (sub_824ADA68) gives it apart from the GPU: critical sections, VdGlobalDevice, a fence word, the
+//     timer frequency, and SA2's own InitializePresentationParameters (sub_824AD560: the automatic back buffer and
 //     SA2's automatic front buffer, a texture the Present resolves into) and InitializeApiState again, the hardware
 //     path's order.
 //   - The state setters, Clear's and Resolve's device work and the Present stay SA2's code: they write the device's
 //     shadows, which the draws read, and their packets go into the ring sink. Clear and Resolve queue the host work
 //     first (sa2_renut_hooks.cpp).
-//   - SA2's ring segment allocator (sub_826F8B90) rewinds the sink like the others.
+//   - SA2's ring segment allocator (sub_824A4220) rewinds the sink like the others.
 
-REX_EXTERN(__imp__sub_826F36D0);  // Direct3D_CreateDevice, the original
-REX_EXTERN(__imp__sub_8270E838);  // D3D::InitializePresentationParameters (CDevice*, D3DPRESENT_PARAMETERS*)
-REX_EXTERN(__imp__sub_8270DE68);  // D3D::InitializeApiState (CDevice*)
+REX_EXTERN(__imp__sub_8249AB48);  // Direct3D_CreateDevice, the original
+REX_EXTERN(__imp__sub_824AD560);  // D3D::InitializePresentationParameters (CDevice*, D3DPRESENT_PARAMETERS*)
+REX_EXTERN(__imp__sub_824AD2F8);  // D3D::InitializeApiState (CDevice*)
 
 namespace {
 
 // HRESULT Direct3D_CreateDevice(UINT Adapter, D3DDEVTYPE DeviceType, void*, DWORD BehaviorFlags,
-//     D3DPRESENT_PARAMETERS*, IDirect3DDevice9 **ppReturnedDeviceInterface) [sub_826F36D0; N&B 0x8264DF28]
+//     D3DPRESENT_PARAMETERS*, IDirect3DDevice9 **ppReturnedDeviceInterface) [sub_8249AB48; N&B 0x8264DF28]
 void Sa2CreateDevice(PPCContext &ctx, uint8_t *base) {
   const u32 device_type = ctx.r4.u32;
   u32 behavior_flags = ctx.r6.u32;
@@ -1335,7 +1359,7 @@ void Sa2CreateDevice(PPCContext &ctx, uint8_t *base) {
 
   // SA2's own no-hardware device.
   ctx.r4.u64 = kDeviceTypeNoHardware;
-  __imp__sub_826F36D0(ctx, base);
+  __imp__sub_8249AB48(ctx, base);
   if (ctx.r3.u32 != 0)
     return;
   const u32 device_va = LoadGuestU32(out_va);
@@ -1345,12 +1369,13 @@ void Sa2CreateDevice(PPCContext &ctx, uint8_t *base) {
     return;
   }
   u8 *bytes = d.bytes;
-  // Its ring was the side buffer, marked out of memory (sub_826F7C10): from here the sink. Fences complete as they
+  // Its ring was the side buffer, marked out of memory (sub_824A3A88): from here the sink. Fences complete as they
   // are written until the title device is set up.
   bytes[kDeviceOffsetFlags2] &= u8(~0x20);
   bytes[kDeviceOffsetFlags2] |= kDeviceFlagImmediateFences;
   WriteU32(bytes, kDeviceOffsetFenceCompletion, fence_va);
-  WriteU32(bytes, 11028, fence_va + 0x80);  // the swap's scratch word (SynchronizeToPresentationInterval)
+  WriteU32(bytes, 10900, fence_va + 0x80);  // los1-nx: LoS +0x2A94 (SA2/MoF 11028)
+    // the swap's scratch word (SynchronizeToPresentationInterval)
   native::RewindRing(d);
 
   if (title_device) {
@@ -1369,7 +1394,7 @@ void Sa2CreateDevice(PPCContext &ctx, uint8_t *base) {
     if (present_parameters) {
       ctx.r3.u64 = device_va;
       ctx.r4.u64 = present_parameters;
-      __imp__sub_8270E838(ctx, base);
+      __imp__sub_824AD560(ctx, base);
       if (!ctx.r3.u32) {
         RGPU_ERROR("Direct3D_CreateDevice: InitializePresentationParameters failed");
         ctx.r3.u64 = kE_OUTOFMEMORY;
@@ -1377,8 +1402,9 @@ void Sa2CreateDevice(PPCContext &ctx, uint8_t *base) {
       }
     }
     ctx.r3.u64 = device_va;
-    __imp__sub_8270DE68(ctx, base);
+    __imp__sub_824AD2F8(ctx, base);
     native::RewindRing(d);
+    d3d::g_default_declaration_va = device_va + d3d::kDeviceOffsetDefaultDeclaration;  // los1-nx (d3d.h)
     // From here the title device's fences complete on the render thread (KickFence).
     bytes[kDeviceOffsetFlags2] &= u8(~kDeviceFlagImmediateFences);
     Video::SetGuestDevice(device_va);
@@ -1387,7 +1413,7 @@ void Sa2CreateDevice(PPCContext &ctx, uint8_t *base) {
   ctx.r3.u64 = 0;  // S_OK
 }
 
-// SA2's ring segment allocator (sub_826F8B90 (CDevice*, DWORD Dwords): KickOffSegment, BeginRingBig and Swap call it
+// SA2's ring segment allocator (sub_824A4220 (CDevice*, DWORD Dwords): KickOffSegment, BeginRingBig and Swap call it
 // for a new segment): the sink again. Non-zero: the callers retry the ring, which has the room.
 u32 Sa2NewSegment_hook(u32 device_va, u32 /*dwords*/) {
   native::Device d = native::DeviceAt(device_va);
@@ -1398,7 +1424,7 @@ u32 Sa2NewSegment_hook(u32 device_va, u32 /*dwords*/) {
   return d.W(native::off::Ring) + 4;
 }
 
-// D3D::SynchronizeToPresentationInterval(CDevice*, BOOL) [sub_826E0D30; N&B 0x8228A748]: its packets (the swap
+// D3D::SynchronizeToPresentationInterval(CDevice*, BOOL) [sub_824AEEC8; N&B 0x8228A748]: its packets (the swap
 // callback and the waits) are the GPU's; the swap is pending.
 void Sa2SynchronizeToPresentationInterval_hook(u32 device_va, u32 /*immediate*/) {
   native::Device d = native::DeviceAt(device_va);
@@ -1408,19 +1434,19 @@ void Sa2SynchronizeToPresentationInterval_hook(u32 device_va, u32 /*immediate*/)
 
 }  // namespace
 
-BANJO_RENUT_HOOK_RAW(sub_826F36D0) {  // Direct3D_CreateDevice [0x8264DF28]
+BANJO_RENUT_HOOK_RAW(sub_8249AB48) {  // Direct3D_CreateDevice [0x8264DF28]
   Sa2CreateDevice(ctx, base);
 }
-BANJO_RENUT_HOOK(sub_826FA298, D3DDevice_InsertCallback_hook);  // D3DDevice_InsertCallback [0x821FB688]
-BANJO_RENUT_HOOK(sub_826E0D30, Sa2SynchronizeToPresentationInterval_hook);  // D3D_SynchronizeToPresentationInterval [0x8228A748]
-BANJO_RENUT_HOOK(sub_826F9DA8, KickOff_hook);  // D3D_CDevice_KickOff [0x82210AB0]
-BANJO_RENUT_HOOK(sub_826F9A20, KickOffSegment_hook);  // D3D_CDevice_KickOffSegment [0x822106C8]
-BANJO_RENUT_HOOK(sub_826FA050, BeginRingBig_hook);  // D3D_CDevice_BeginRingBig [0x821F7C18]
-BANJO_RENUT_HOOK(sub_826F83B8, RingBufferDeviceAllocate_hook);  // D3D_RingBufferDeviceAllocate [0x8222D3E0]
-BANJO_RENUT_HOOK_SHARED(sub_826F8AA8, AllocateInlineData_hook);  // D3D_CDevice_AllocateInlineData [0x8222D240]
-BANJO_RENUT_HOOK(sub_826F8B90, Sa2NewSegment_hook);  // SA2's ring segment allocator
-BANJO_RENUT_HOOK(sub_826FA498, D3DDevice_SetRingBufferParameters_hook);  // D3DDevice_SetRingBufferParameters [0x82657508]
-BANJO_RENUT_HOOK(sub_826E11F0, D3DDevice_Swap_hook);  // D3DDevice_Swap [0x82287590]
-BANJO_RENUT_HOOK(sub_826F8748, BlockOnFence_hook);  // D3D_CDevice_BlockOnFence [0x8228F558]
-BANJO_RENUT_HOOK_SHARED(sub_826F2B60, CBlocker_Check_hook);  // D3D_CBlocker_Check [0x8264DCD0]
-BANJO_RENUT_HOOK(sub_826F9F50, IsFencePending_hook);  // D3DDevice_IsFencePending [0x8228F650]
+BANJO_RENUT_HOOK(sub_824A5220, D3DDevice_InsertCallback_hook);  // D3DDevice_InsertCallback [0x821FB688]
+BANJO_RENUT_HOOK(sub_824AEEC8, Sa2SynchronizeToPresentationInterval_hook);  // D3D_SynchronizeToPresentationInterval [0x8228A748]
+BANJO_RENUT_HOOK(sub_824A4EF8, KickOff_hook);  // D3D_CDevice_KickOff [0x82210AB0]
+BANJO_RENUT_HOOK(sub_824A4D70, KickOffSegment_hook);  // D3D_CDevice_KickOffSegment [0x822106C8]
+BANJO_RENUT_HOOK(sub_824A5130, BeginRingBig_hook);  // D3D_CDevice_BeginRingBig [0x821F7C18]
+BANJO_RENUT_HOOK(sub_824A3B00, RingBufferDeviceAllocate_hook);  // D3D_RingBufferDeviceAllocate [0x8222D3E0]
+BANJO_RENUT_HOOK_SHARED(sub_824A3D30, AllocateInlineData_hook);  // D3D_CDevice_AllocateInlineData [0x8222D240]
+BANJO_RENUT_HOOK(sub_824A4220, Sa2NewSegment_hook);  // SA2's ring segment allocator
+BANJO_RENUT_HOOK(sub_824A5278, D3DDevice_SetRingBufferParameters_hook);  // D3DDevice_SetRingBufferParameters [0x82657508]
+BANJO_RENUT_HOOK(sub_824AF2F8, D3DDevice_Swap_hook);  // D3DDevice_Swap [0x82287590]
+BANJO_RENUT_HOOK(sub_824A3E18, BlockOnFence_hook);  // D3D_CDevice_BlockOnFence [0x8228F558]
+BANJO_RENUT_HOOK_SHARED(sub_8249A408, CBlocker_Check_hook);  // D3D_CBlocker_Check [0x8264DCD0]
+BANJO_RENUT_HOOK(sub_824A5038, IsFencePending_hook);  // D3DDevice_IsFencePending [0x8228F650]

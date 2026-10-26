@@ -4,7 +4,7 @@
 # Usage (from C:\LoS1-nx): powershell -ExecutionPolicy Bypass -File tools\win\build_pc.ps1 [-Jobs N] [-Clean]
 #   -Jobs   parallel compile jobs (default: half the logical CPUs, at most 8; each recompiled file needs ~1-2 GB RAM)
 #   -Clean  delete the build folder first
-#   -Renut  also build Renut's renderer (LOS_RENUT_RENDERER; not yet mapped to this game)
+#   -Renut  also build Renut's renderer (LOS_RENUT_RENDERER; first test build)
 
 param(
     [int]$Jobs = 0,
@@ -88,21 +88,21 @@ if (-not (Test-Path (Join-Path $sdk 'thirdparty\fmt\CMakeLists.txt'))) {
 }
 
 # 1b. Renut's renderer: its third-party code (plume, XenosRecomp with DXC, uam, ImGui, from sa2-nx; one time) and the
-# game's shader containers, which its shader cache is translated from (tools/los_dump_shaders.py: the .bshdat files).
+# game's shader containers, which its shader cache is translated from (tools/los_dump_shaders.py: the bmp/vsh entries
+# of the .packed archives of both discs).
 if (-not (Test-Path (Join-Path $repo 'app\thirdparty\plume\CMakeLists.txt')) -or
     -not (Test-Path (Join-Path $repo 'app\thirdparty\reblue-XenosRecomp\thirdparty\dxc-bin\bin\x64\dxc.exe'))) {
     Step "Fetching the renderer's libraries (one time)" 'renut_deps.log' {
         python (Join-Path $repo 'tools\fetch_renut_deps.py')
     }
 }
-# LoS1-nx: the shader dump is Mirror of Fate's (.bshdat files) and only Renut's renderer needs it, which is off until
-# its Direct3D map is made for this game (app/CMakeLists.txt LOS_RENUT_RENDERER). Lords of Shadow keeps its shaders
-# in its .packed archives: a dumper of its own comes with the renderer. -Renut runs this step.
+# Only Renut's renderer needs it: -Renut runs this step.
 $shaderDump = Join-Path $repo 'out\renut_shader_dump'
 if ($Renut -and -not (Test-Path (Join-Path $shaderDump 'manifest.csv'))) {
     Step "Extracting the game's shaders" 'shader_dump.log' {
         python -m pip install --user --quiet --disable-pip-version-check xxhash
-        python (Join-Path $repo 'tools\los_dump_shaders.py') --assets (Join-Path $repo 'assets\game_root') --out $shaderDump
+        python (Join-Path $repo 'tools\los_dump_shaders.py') --assets (Join-Path $repo 'assets\game_root') `
+            --assets (Join-Path $repo 'assets\game_root_disc2') --out $shaderDump
     }
 }
 

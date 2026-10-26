@@ -1,14 +1,14 @@
 // LoS1-nx: the render targets the game binds.
 //
 // 1. For Renut's renderer: each surface's descriptor words are remembered at its bind (renut::gpu::
-//    RememberBoundSurface). The game builds a surface object for each SetRenderTarget (all from sub_824C6630, the
+//    RememberBoundSurface). Found in Mirror of Fate (mof-nx), whose code this is: the game builds a surface object for each SetRenderTarget (all from MoF's sub_824C6630, the
 //    call at 0x824C67E0: dozens of distinct objects, each a copy of the 1280x720 back buffer's header, word 0
 //    0x00100004 where Direct3D's own have 0x80100004) in memory it reuses soon after; the render thread reads a draw's
 //    targets a frame or more later and found other data there (Mark's PC, 2026-10-23: targets of 1x8705 and
 //    7384x27854, 231 failed creations, flicker; found with 2. on the Linux build).
 //
-// 2. Diagnostics, on only with the environment variable LOS_RT_DIAG=1: logs each distinct surface pointer passed to D3DDevice_SetRenderTarget (sub_826DAFA8), SetDepthStencilSurface
-// (sub_826DB338) and the four-target setter sub_826DB610 (reached only through a pointer), with the first 0x30
+// 2. Diagnostics, on only with the environment variable LOS_RT_DIAG=1: logs each distinct surface pointer passed to D3DDevice_SetRenderTarget (sub_82498388), SetDepthStencilSurface
+// (sub_824986D8) and the four-target setter sub_824989B0 (LoS's addresses: d3d_match against MoF's, docs/d3d-map.md), with the first 0x30
 // bytes at the pointer and the caller. Written to find out what the colour "surfaces" with impossible sizes are
 // (first Renut boots, 2026-10-23: 1x8705 and 7384x27854).
 
@@ -74,26 +74,26 @@ void Remember(uint32_t surface) {
 
 }  // namespace
 
-REX_EXTERN(__imp__sub_826DAFA8);
-REX_HOOK_RAW(sub_826DAFA8) {
+REX_EXTERN(__imp__sub_82498388);
+REX_HOOK_RAW(sub_82498388) {
   Remember(ctx.r5.u32);
   if (On()) Note("SetRenderTarget", base, ctx.r5.u32, uint32_t(ctx.lr), ctx.r4.u32);
-  __imp__sub_826DAFA8(ctx, base);
+  __imp__sub_82498388(ctx, base);
 }
 
-REX_EXTERN(__imp__sub_826DB338);
-REX_HOOK_RAW(sub_826DB338) {
+REX_EXTERN(__imp__sub_824986D8);
+REX_HOOK_RAW(sub_824986D8) {
   Remember(ctx.r4.u32);
   if (On()) Note("SetDepthStencil", base, ctx.r4.u32, uint32_t(ctx.lr), 0);
-  __imp__sub_826DB338(ctx, base);
+  __imp__sub_824986D8(ctx, base);
 }
 
-REX_EXTERN(__imp__sub_826DB610);
-REX_HOOK_RAW(sub_826DB610) {
+REX_EXTERN(__imp__sub_824989B0);
+REX_HOOK_RAW(sub_824989B0) {
   for (uint32_t i = 0; i < 5; ++i) Remember(Load32(base, ctx.r4.u32 + 4 * i));
   if (On()) {
     const uint32_t s = ctx.r4.u32;
     for (uint32_t i = 0; i < 5; ++i) Note("SetSurfaces", base, Load32(base, s + 4 * i), uint32_t(ctx.lr), i);
   }
-  __imp__sub_826DB610(ctx, base);
+  __imp__sub_824989B0(ctx, base);
 }

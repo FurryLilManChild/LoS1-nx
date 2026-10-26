@@ -52,10 +52,11 @@ namespace sa2::renut {
 namespace {
 
 using Clock = std::chrono::steady_clock;
-constexpr uint32_t kDeviceOffsetPresentationInterval = 14000;  // the device's copy of D3DPRESENT_PARAMETERS + 52
+constexpr uint32_t kDeviceOffsetPresentationInterval = 13808;  // los1-nx: LoS +0x35F0 (SA2/MoF 14000)
+    // the device's copy of D3DPRESENT_PARAMETERS + 52
 constexpr Clock::duration kRefresh = std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>(1.0 / 60.0));
 
-// Refreshes per frame for D3DPRESENT_INTERVAL_*: as SA2's SynchronizeToPresentationInterval (sub_826E0D30) maps them.
+// Refreshes per frame for D3DPRESENT_INTERVAL_*: as SA2's SynchronizeToPresentationInterval (sub_824AEEC8) maps them.
 uint32_t RefreshesPerFrame(uint32_t interval) {
   switch (interval) {
     case 0:  // DEFAULT

@@ -214,8 +214,9 @@ uint32_t SurfaceCopyLocked(uint8_t* base, uint32_t va) {
 }
 
 // The device's resource pointers (big-endian words at the offsets in renut_engine/gpu/d3d/d3d.h).
-constexpr uint32_t kIndexBuffer = 12812, kStreams = 12836, kTextures = 12920, kRenderTargets = 12816;
-constexpr uint32_t kStreamCount = 16, kTextureCount = 26, kSurfaceCount = 5;  // 4 colour targets, then depth (12832)
+// los1-nx: LoS's (renut_engine/gpu/d3d/d3d.h; SA2/MoF 12812, 12836, 12920, 12816).
+constexpr uint32_t kIndexBuffer = 12612, kStreams = 12636, kTextures = 12720, kRenderTargets = 12616;
+constexpr uint32_t kStreamCount = 16, kTextureCount = 26, kSurfaceCount = 5;  // 4 colour targets, then depth (12632)
 constexpr uint32_t kSaved = 1 + kStreamCount + kTextureCount + kSurfaceCount;
 static_assert(kSaved == 48, "los_renut_glue.cpp declares SavedPointers with 48 words");
 
