@@ -41,7 +41,10 @@ Newest first. Each entry: what was done, what was found, what is next.
   Now `<game folder>_disc2` (or `game_data_root_disc2`) is mounted as `\Device\Cdrom1`, and XamSwapDisc points game:
   and d: at the disc asked for and sets the event (`sdk/src/system/runtime.cpp`, `sdk/src/kernel/xam/xam_info.cpp`).
   Not yet tested at the actual swap (late in the game).
-- Next: Mark's console run with the shader file; then GPU time.
+- Shader file merged: the console's own 177 variants (118 of them matched the PC list's keys) and the PC list's 232
+  others, 409 in all, on Mark's card with the disc 2 build. Mark: "very performant"; he is playing on and will send
+  logs at a stopping point or a problem.
+- Next: GPU time in the heavy scenes (from his next log), the swap to disc 2 when he gets there.
 
 ## 2026-10-26: first PC boots
 
