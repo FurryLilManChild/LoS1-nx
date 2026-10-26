@@ -150,7 +150,7 @@ std::unique_ptr<plume::RenderShader> CreateCachedShader(plume::RenderDevice *dev
                                 plume::RenderShaderFormat::SPIRV);
   }
 
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(RENUT_NO_DXIL)  // los1-nx: no D3D12 code in a RENUT_DXIL OFF build
   const uint8_t *cache = Decompress(g_dxil, g_compressedDxilCache, g_dxilCacheCompressedSize,
                                     g_dxilCacheDecompressedSize, "DXIL");
   if (!cache || entry.dxilSize == 0)
