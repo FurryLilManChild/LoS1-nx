@@ -1404,7 +1404,6 @@ void Sa2CreateDevice(PPCContext &ctx, uint8_t *base) {
     ctx.r3.u64 = device_va;
     __imp__sub_824AD2F8(ctx, base);
     native::RewindRing(d);
-    d3d::g_default_declaration_va = device_va + d3d::kDeviceOffsetDefaultDeclaration;  // los1-nx (d3d.h)
     // From here the title device's fences complete on the render thread (KickFence).
     bytes[kDeviceOffsetFlags2] &= u8(~kDeviceFlagImmediateFences);
     Video::SetGuestDevice(device_va);

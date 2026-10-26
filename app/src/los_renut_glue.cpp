@@ -77,12 +77,13 @@ REX_HOOK_RAW(sub_824A3150) {
 }
 
 extern std::atomic<uint64_t> g_sa2_game_frames;
+extern "C" uint32_t los_texture_copy(uint32_t va);  // los_resource_copies.cpp
 
 // los_resource_copies.cpp: the draws take stable copies of their resource headers (see there).
 namespace los {
 struct SavedPointers {
   uint32_t device = 0;
-  uint32_t words[48];
+  uint32_t words[49];
 };
 void UseCopies(uint8_t* base, uint32_t device, SavedPointers& s);
 void RestorePointers(uint8_t* base, const SavedPointers& s);
@@ -134,6 +135,58 @@ void FrameNote(int fn, const PPCContext& ctx, const uint8_t* base) {
   }
   ++d.counts[fn];
   const uint32_t dev = ctx.r3.u32;
+  // los1-nx: LOS_TEX_DIAG=<n>: the first n draws' bound texture headers (slots 0-3: the address, its copy, words 0-12).
+  static const int tex_diag = [] { const char* e = std::getenv("LOS_TEX_DIAG"); return e ? std::atoi(e) : 0; }();
+  static int tex_logged = 0;
+  if (tex_logged < tex_diag && std::chrono::duration<double>(now - first).count() >= FrameDiagSeconds()) {
+    ++tex_logged;
+    {
+      std::string words;
+      for (uint32_t o = 0x28C0; o < 0x2964; o += 4) {
+        uint32_t v;
+        std::memcpy(&v, base + dev + o, 4);
+        words += fmt::format("{}{:08X}", (o & 0xF) ? " " : (o == 0x28C0 ? "" : " | "), __builtin_bswap32(v));
+      }
+      REXLOG_INFO("[texdiag] frame {} device 28C0-2963: {}", frame, words);
+      uint32_t decl;
+      std::memcpy(&decl, base + dev + renut::gpu::d3d::kDeviceOffsetVertexDeclaration, 4);
+      decl = __builtin_bswap32(decl);
+      std::string dw;
+      for (uint32_t o = 0; o < 0x80; o += 4) {
+        uint32_t v;
+        std::memcpy(&v, base + decl + o, 4);
+        dw += fmt::format(" {:08X}", __builtin_bswap32(v));
+      }
+      REXLOG_INFO("[texdiag] frame {} declaration {:08X}:{}", frame, decl, dw);
+    }
+    for (uint32_t s = 0; s < 2; ++s) {
+      uint32_t va, stride = 0;
+      std::memcpy(&va, base + dev + renut::gpu::d3d::kDeviceOffsetStreamSources + 4 * s, 4);
+      va = __builtin_bswap32(va);
+      stride = base[dev + renut::gpu::d3d::kDeviceOffsetStreamStrides + s];
+      uint32_t w[8] = {};
+      if (va) for (int i = 0; i < 8; ++i) { std::memcpy(&w[i], base + va + 4 * i, 4); w[i] = __builtin_bswap32(w[i]); }
+      uint32_t decl, vfw[2];
+      std::memcpy(&decl, base + dev + renut::gpu::d3d::kDeviceOffsetVertexDeclaration, 4);
+      std::memcpy(&vfw[0], base + dev + 0x6F0 + 8 * (17 - s), 4);
+      std::memcpy(&vfw[1], base + dev + 0x6F0 + 8 * (17 - s) + 4, 4);
+      REXLOG_INFO("[texdiag] frame {} stream {}: {:08X} stride/4 {} decl {:08X}: {:08X} {:08X} {:08X} {:08X} {:08X} "
+                  "{:08X} {:08X} {:08X}; fetch {:08X} {:08X}; r4..r6 {:08X} {:08X} {:08X}", frame, s, va, stride,
+                  __builtin_bswap32(decl), w[0], w[1], w[2], w[3], w[4], w[5], w[6], w[7], __builtin_bswap32(vfw[0]),
+                  __builtin_bswap32(vfw[1]), ctx.r4.u32, ctx.r5.u32, ctx.r6.u32);
+    }
+    for (uint32_t r = 0; r < 4; ++r) {
+      uint32_t va;
+      std::memcpy(&va, base + dev + renut::gpu::d3d::kDeviceOffsetTextures + 4 * r, 4);
+      va = __builtin_bswap32(va);
+      if (!va) continue;
+      uint32_t w[13];
+      for (int i = 0; i < 13; ++i) { std::memcpy(&w[i], base + va + 4 * i, 4); w[i] = __builtin_bswap32(w[i]); }
+      REXLOG_INFO("[texdiag] frame {} kind {} slot {}: {:08X} -> {:08X}: {:08X} {:08X} {:08X} {:08X} {:08X} {:08X} "
+                  "{:08X} | {:08X} {:08X} {:08X} {:08X} {:08X} {:08X}", frame, fn, r, va, los_texture_copy(va), w[0],
+                  w[1], w[2], w[3], w[4], w[5], w[6], w[7], w[8], w[9], w[10], w[11], w[12]);
+    }
+  }
   uint32_t vs = 0, ps = 0;
   std::memcpy(&ps, base + dev + renut::gpu::d3d::kDeviceOffsetPixelShader, 4);
   std::memcpy(&vs, base + dev + renut::gpu::d3d::kDeviceOffsetVertexShader, 4);

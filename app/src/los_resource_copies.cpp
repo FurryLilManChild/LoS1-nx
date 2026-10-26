@@ -19,6 +19,7 @@
 
 #include <array>
 #include <cstdint>
+#include <string>
 #include <cstdlib>
 #include <cstring>
 #include <mutex>
@@ -110,6 +111,22 @@ struct SurfaceContentHash {
   }
 };
 std::unordered_map<SurfaceContent, uint32_t, SurfaceContentHash> g_surfaces;  // header words -> copy
+
+// los1-nx (2026-10-26): vertex declarations. Lords of Shadow's Direct3D (XDK 2.0.11626) builds the declaration of an
+// FVF draw in the device itself (+0x3050: a D3DVertexDeclaration header, the element count at +0x18 and the
+// D3DVERTEXELEMENT9s from +0x34, up to D3DDECL_END) and binds that, so the declaration's address names no declaration
+// and its elements change from draw to draw; no hook sees it made. Each different element list gets a permanent copy,
+// registered with the renderer as the game's own declarations are (renut_engine/gpu/d3d/hooks/shader.cpp), and the
+// draw binds the copy. Before this the renderer dropped the draws ("vertex declaration 4003BCD0 is not one the
+// renderer knows"), and then took them as declaration-less: every 2D draw (menus, text, the loading screens) came
+// out wrong and the frames black (Mark's PC and the Linux run, 2026-10-26).
+constexpr uint32_t kDeviceDeclaration = 0x3050;
+constexpr uint32_t kDeclarationElements = 0x34;
+constexpr uint32_t kDeclarationSlot = 0x200;   // the header and up to 37 elements
+constexpr uint32_t kDeclarationSlots = 1024;   // 512 KB, permanent
+uint32_t g_declaration_block = 0;
+uint32_t g_declaration_count = 0;
+std::unordered_map<std::string, uint32_t> g_declarations;  // element bytes -> copy
 uint8_t* g_base = nullptr;  // the guest memory base, from the first draw
 
 bool Init() {
@@ -118,7 +135,8 @@ bool Init() {
   g_buffer_block = renut::gpu::records::AllocPhysicalBlock(kBufferSlots * kSlot);
   g_buffer_owner = new std::array<Content, kBufferSlots>();
   g_surface_block = renut::gpu::records::AllocPhysicalBlock(kSurfaceSlots * kSlot);
-  if (!g_texture_block || !g_buffer_block || !g_surface_block) {
+  g_declaration_block = renut::gpu::records::AllocPhysicalBlock(kDeclarationSlots * kDeclarationSlot);
+  if (!g_texture_block || !g_buffer_block || !g_surface_block || !g_declaration_block) {
     g_failed = true;
     REXLOG_ERROR("[los] resource header copies: no guest memory; the renderer reads the game's headers");
     return false;
@@ -217,8 +235,32 @@ uint32_t SurfaceCopyLocked(uint8_t* base, uint32_t va) {
 // los1-nx: LoS's (renut_engine/gpu/d3d/d3d.h; SA2/MoF 12812, 12836, 12920, 12816).
 constexpr uint32_t kIndexBuffer = 12612, kStreams = 12636, kTextures = 12720, kRenderTargets = 12616;
 constexpr uint32_t kStreamCount = 16, kTextureCount = 26, kSurfaceCount = 5;  // 4 colour targets, then depth (12632)
-constexpr uint32_t kSaved = 1 + kStreamCount + kTextureCount + kSurfaceCount;
-static_assert(kSaved == 48, "los_renut_glue.cpp declares SavedPointers with 48 words");
+constexpr uint32_t kDeclaration = 11992;  // the bound vertex declaration (renut_engine/gpu/d3d/d3d.h)
+constexpr uint32_t kSaved = 1 + kStreamCount + kTextureCount + kSurfaceCount + 1;
+static_assert(kSaved == 49, "los_renut_glue.cpp declares SavedPointers with 49 words");
+
+extern "C" void los_register_declaration(uint32_t declaration_va, uint32_t elements_va);  // hooks/shader.cpp
+
+// The copy that stands for the device's own declaration as it is now; any other declaration as it is.
+uint32_t DeclarationCopyLocked(uint8_t* base, uint32_t device, uint32_t va) {
+  if (!va || va != device + kDeviceDeclaration || !g_declaration_block) return va;
+  std::string key;
+  for (uint32_t i = 0; i < (kDeclarationSlot - kDeclarationElements) / 12; ++i) {
+    const uint8_t* e = base + va + kDeclarationElements + 12 * i;
+    key.append(reinterpret_cast<const char*>(e), 12);
+    if (e[0] == 0 && e[1] == 0xFF) break;  // D3DDECL_END: Stream 0xFF
+  }
+  auto it = g_declarations.find(key);
+  if (it != g_declarations.end()) return it->second;
+  if (g_declaration_count >= kDeclarationSlots) return va;
+  const uint32_t copy = g_declaration_block + kDeclarationSlot * g_declaration_count++;
+  std::memset(base + copy, 0, kDeclarationSlot);
+  std::memcpy(base + copy, base + va, kDeclarationElements);
+  std::memcpy(base + copy + kDeclarationElements, key.data(), key.size());
+  g_declarations.emplace(std::move(key), copy);
+  los_register_declaration(copy, copy + kDeclarationElements);
+  return copy;
+}
 
 struct SavedPointers {
   uint32_t device = 0;
@@ -250,6 +292,8 @@ void UseCopies(uint8_t* base, uint32_t device, SavedPointers& s) {
     const uint32_t at = device + kRenderTargets + 4 * i;
     Swap(base, at, SurfaceCopyLocked(base, Load32(base, at)), &s.words[n++]);
   }
+  Swap(base, device + kDeclaration, DeclarationCopyLocked(base, device, Load32(base, device + kDeclaration)),
+       &s.words[n++]);
 }
 
 void RestorePointers(uint8_t* base, const SavedPointers& s) {
@@ -259,6 +303,7 @@ void RestorePointers(uint8_t* base, const SavedPointers& s) {
   for (uint32_t i = 0; i < kTextureCount; ++i) std::memcpy(base + s.device + kTextures + 4 * i, &s.words[n++], 4);
   for (uint32_t i = 0; i < kSurfaceCount; ++i)
     std::memcpy(base + s.device + kRenderTargets + 4 * i, &s.words[n++], 4);
+  std::memcpy(base + s.device + kDeclaration, &s.words[n++], 4);
 }
 
 // For Renut's clear and resolve hooks (game thread): the same copies around their queueing.

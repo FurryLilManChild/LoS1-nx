@@ -4073,9 +4073,7 @@ bool DrawStateLocked(const u8 *device_state, const DrawCall &call, const ReplayC
 
   const u32 vs_va = device.U32(d3d::kDeviceOffsetVertexShader);
   auto *vs = FindShaderLocked(vs_va, RecordKind::VertexShader);
-  u32 declaration_va = device.U32(d3d::kDeviceOffsetVertexDeclaration);
-  if (declaration_va && declaration_va == d3d::g_default_declaration_va)
-    declaration_va = 0;  // los1-nx: the device's own, empty declaration (d3d.h)
+  const u32 declaration_va = device.U32(d3d::kDeviceOffsetVertexDeclaration);
   auto *ps = FindShaderLocked(device.U32(d3d::kDeviceOffsetPixelShader), RecordKind::PixelShader);
   // Without a declaration set, the shader fetches as D3DVertexShader_Bind
   // bound it, or else as its own vfetches describe (bundle meshes).

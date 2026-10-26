@@ -20,7 +20,11 @@ Newest first. Each entry: what was done, what was found, what is next.
 - Mark's PC had never pulled (its branch had no upstream: `git pull` did nothing); with the code in place the shader
   step still stopped at 98 %: XenosRecomp exits with code 2 when any shader fails, and the 32 DXIL validation
   failures count. The PC build now makes Vulkan code only (`RENUT_DXIL=OFF`, the renderer then always uses Vulkan).
-- Next: Mark's PC build with `-Renut` and a boot test.
+- Mark's PC build (Vulkan): runs at 60 fps, but black. The same on the Linux run, whose captures work for Mirror of
+  Fate. Cause: this Direct3D builds the declaration of an FVF draw inside the device (+0x3050) and binds that, so the
+  renderer had no vertex layout for the 2D draws. Each element list now gets a registered copy: the Linux run shows
+  the loading screen and the title screen.
+- Next: Mark's PC test of the title screen and the first level.
 
 ## 2026-10-26: first PC boots
 

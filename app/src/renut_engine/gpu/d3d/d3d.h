@@ -289,12 +289,6 @@ constexpr u32 kDeviceOffsetBehaviorFlags = 24200;  // los1-nx: LoS +0x5E88 (SA2/
 // these but the strides (sub_82900FB0, BeginVertices). N&B's in brackets.
 constexpr u32 kDeviceOffsetVertexDeclaration = 11992;  // los1-nx: LoS +0x2ED8 (SA2/MoF 12240)
     // SetVertexDeclaration [0x2E2C]
-// los1-nx: the device's own vertex declaration (an empty D3DVertexDeclaration header InitializeApiState builds at
-// +0x3050, sub_824AD2F8; SA2/MoF +0x3118, N&B +0x2FA0). Lords of Shadow draws with it bound (the first Linux boot,
-// 2026-10-26: "Draw dropped: vertex declaration 4003BCD0", the device at 40038C80), and no hook ever sees it made:
-// a draw takes it as no declaration (the shader's own fetches). The title device's address of it (device.cpp).
-constexpr u32 kDeviceOffsetDefaultDeclaration = 0x3050;
-inline u32 g_default_declaration_va = 0;
 constexpr u32 kDeviceOffsetIndexBuffer = 12612;  // los1-nx: LoS +0x3144 (SA2/MoF 12812)
     // SetIndices [0x3094]
 constexpr u32 kDeviceOffsetRenderTargets = 12616;  // los1-nx: LoS +0x3148 (SA2/MoF 12816)

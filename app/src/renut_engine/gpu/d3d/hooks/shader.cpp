@@ -494,3 +494,10 @@ BANJO_RENUT_HOOK_RAW(sub_8249CD90) {
   if (const auto *elements = declaration ? GuestPtr<const GuestVertexElement>(elements_va) : nullptr)
     RegisterGuestDeclaration(declaration, elements);
 }
+
+// los1-nx (2026-10-26): a declaration the app's glue copied out of the device (app/src/los_resource_copies.cpp), as the
+// game's own creations are registered above.
+extern "C" void los_register_declaration(u32 declaration_va, u32 elements_va) {
+  if (const auto *elements = GuestPtr<const GuestVertexElement>(elements_va))
+    RegisterGuestDeclaration(declaration_va, elements);
+}
