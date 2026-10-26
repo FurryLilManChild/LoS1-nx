@@ -50,9 +50,8 @@ This repository contains no assets or program code from the original game. Users
 obtained copy, and everything made from it (`assets/`, `app/generated/`, shader dumps and packages) is made on their
 own computer. Running homebrew requires custom firmware, which violates Nintendo's terms of service.
 
-Builds are made from your own copy of the game: the executables and NROs contain the game's translated code, and the
-shader files contain its translated shaders. Do not share built files (`.exe`, `.nro`, `deko3d_shaders.bin`, shader
-packages); everyone builds from their own game.
+Test builds for the Switch are on the Releases page. They contain no game files: you add the files from your own
+dump (see the release notes).
 
 Source code is provided under the GPL-3.0 License (see [LICENSE](LICENSE)), like the ports it builds on.
 
