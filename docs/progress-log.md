@@ -14,6 +14,9 @@ Newest first. Each entry: what was done, what was found, what is next.
   wait for the display's flip count, the ring space query, the device's own vertex declaration, predicated tiling
   ([renderer.md](renderer.md)). The game now runs with the renderer to its 3D title scene without a crash, but the
   frames captured there are black; whether that is lavapipe or the renderer is for Mark's PC test.
+- Mark's first `-Renut` build: the shader translator's second run (Renut's early alpha copies) stopped at 98 % with
+  no message; the first run had built all 2,006 (32 pixel shaders failed DXIL validation, "coord uninitialized": no
+  D3D12 code for them, the Vulkan code is there). The early alpha pass is off in `build_pc.ps1` for now.
 - Next: Mark's PC build with `-Renut` and a boot test.
 
 ## 2026-10-26: first PC boots

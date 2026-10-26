@@ -114,6 +114,9 @@ $cfgArgs = @(
     '-DCMAKE_C_FLAGS=-march=x86-64-v2', '-DCMAKE_CXX_FLAGS=-march=x86-64-v2',
     '-DREXGLUE_ENABLE_TRACY=OFF',
     "-DLOS_RENUT_RENDERER=$(if ($Renut) { 'ON' } else { 'OFF' })",
+    # LoS1-nx (2026-10-26): no early alpha pass for now. Mark's first -Renut build: the translator's second run (the
+    # early alpha copies) stopped at 98 % with no message, after the first run had built every shader.
+    '-DBANJO_RENUT_EARLY_ALPHA=OFF',
     '-DCMAKE_POLICY_VERSION_MINIMUM=3.5'
 )
 
