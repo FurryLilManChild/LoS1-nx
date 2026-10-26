@@ -2,6 +2,19 @@
 
 Newest first. Each entry: what was done, what was found, what is next.
 
+## 2026-10-26: first PC boots
+
+- Mark's first build stopped at Mirror of Fate's shader dump step (no .bshdat files: "no inputs"). The dump and
+  Renut's renderer now only run with `build_pc.ps1 -Renut`.
+- First boot (Mark's PC, emulated GPU, D3D12): the game opens Data00.packed and English.packed, looks for `D:\Voices\`
+  and `D:\mods\` (not on the disc), opens audio, sets the GPU interrupt callback (824A39F0), names its threads
+  (SwapDiscThread, FileAlignThread, PS_Thread, PxSimulate_Thread), then "Call to invalid or unregistered function at
+  guest address 0x826FFE88".
+- `tools/pointer_fixpoint.py` over the image: 156 candidates, 131 accepted (among them 0x826FFE88), 25 rejected (8
+  jump tables, 4 funclets, 11 no code, 1 no terminator, 1 fragment); the second pass found none.
+- setjmp/longjmp found ahead of the Lua panic Mirror of Fate's third boot hit: 0x826F0A00 and 0x826F0CD0 (by Mirror
+  of Fate's copies). Codegen: 59,682 functions, no warnings, setjmp emitted in 8 files.
+
 ## 2026-10-25: start
 
 - Feasibility scan of disc 1's `default.xex` ([scan.md](scan.md)): 59,556 functions, one override, every import in
