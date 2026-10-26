@@ -1,4 +1,4 @@
-# Castlevania: Lords of Shadow - Mirror of Fate HD settings, read at start.
+# Castlevania: Lords of Shadow settings, read at start.
 
 # true: a frame that misses its refresh is shown as soon as it is ready instead of waiting for the next one.
 sa2_vsync_relaxed = true

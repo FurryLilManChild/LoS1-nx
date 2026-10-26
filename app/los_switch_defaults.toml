@@ -1,4 +1,4 @@
-# Castlevania: Lords of Shadow - Mirror of Fate HD for the Switch: the fixed settings, compiled into the NRO
+# Castlevania: Lords of Shadow for the Switch: the fixed settings, compiled into the NRO
 # (app/CMakeLists.txt, src/los_app.h BuiltInConfig) and applied before the SD card's los.toml, which holds the
 # player's options (app/los_switch.toml) and may override any key here for testing.
 # Test builds: logging on (logs/ next to the NRO), so the console's runs can be read.
@@ -10,9 +10,10 @@ sa2_renderer = "renut"
 renut_gpu_backend = "deko3d"
 sa2_render_height_handheld = 720
 sa2_render_height_docked = 720
-# The game files as one pack file on the SD card (game_root.nxpack), built from game_root/ on the first start.
-asset_pack = true
-asset_pack_build = true
+# The game files read from game_root/ as they are. Not one pack file (game_root.nxpack, as Mirror of Fate's build has):
+# this game's files are 6.7 GB, and a FAT32 card holds no file over 4 GB.
+asset_pack = false
+asset_pack_build = false
 audio_mute = false
 
 # Logging on for the test builds

@@ -25,7 +25,10 @@ Newest first. Each entry: what was done, what was found, what is next.
   renderer had no vertex layout for the 2D draws. Each element list now gets a registered copy: the Linux run shows
   the loading screen and the title screen.
 - Mark's PC test (Vulkan): "looks and plays well"; the Travel Book menus no longer flicker.
-- Next: the first Switch build (`tools/linux/build_switch.sh`).
+- First Switch build (`tools/linux/build_switch.sh` in the cloud session, about 1 h 20 min on 2 cores): 2,006 shaders
+  in the deko3d package (32 kept without the GLSL passes: uam failed on their rewrite). No asset pack on the Switch:
+  the game files are 6.7 GB and a FAT32 card holds no file over 4 GB, so game_root/ is read as it is.
+- Next: Mark's first console test.
 
 ## 2026-10-26: first PC boots
 
