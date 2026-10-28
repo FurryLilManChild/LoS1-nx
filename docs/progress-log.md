@@ -19,7 +19,14 @@ Newest first. Each entry: what was done, what was found, what is next.
 - Linux run at 540p (lavapipe): the 3D title scene draws right at 960x540. Switch build: 21 steps (the shader package
   and an incremental build). Shader variant file: the PC list's 350 variants made again (110 unchanged) plus the
   console's own, 417 in all.
-- Next: Mark's stock-clock console log (with and without heavy scenes): GPU time against the main thread's time.
+- Mark's stock-clock tests (CPU 1020 MHz; his sys-clk profile changed after the start, so the start check was right):
+  720p: light 46-60 fps (GPU 15-21 ms), medium 32-36, heavy 10-17 with the main game thread at 97-98 %. 540p forced in
+  los.toml: the heavy scene's GPU time 35-40 ms -> 20-23 ms, 9-14 fps: the game thread is the limit. Its stack samples
+  (switch_profile_stacks, 2,261 in the heavy scene): 67 % the game's own code with no function above 2 %, 10 % the
+  resource copies, 8 % the game's Direct3D, 4 % the renderer. LTO + PGO (sa2-nx: about 15 %) and cheaper copies would
+  not bring the heavy scenes to 30 at stock clocks; Mark chose the cap for now.
+- 30 fps cap at stock clocks in handheld (`los_fps_cap`, -1 by default; the pacing takes at least two refreshes a
+  frame), and the clock checked again every 5 s (a sys-clk profile changed in game switches 540p and the cap).
 
 ## 2026-10-26: Renut's renderer mapped to this game
 

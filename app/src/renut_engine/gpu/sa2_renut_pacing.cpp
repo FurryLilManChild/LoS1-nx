@@ -47,6 +47,10 @@ REXCVAR_DEFINE_BOOL(sa2_renut_vblank_pacing, true, "SA2",
 // The native renderer's relaxed vsync key (src/me/me_native_system.cpp), the player's setting.
 extern ::sa2::enh::Enhancement g_vsync_relaxed;
 
+namespace los {
+uint32_t MinRefreshesPerFrame();  // los_stock_clocks.cpp
+}
+
 namespace sa2::renut {
 
 namespace {
@@ -152,7 +156,9 @@ void PaceSwap(uint32_t device_va) {
   static const bool on = REXCVAR_GET(sa2_renut_vblank_pacing);
   if (!on || !device_va) return;
   const auto *interval_word = ::renut::gpu::GuestPtr<const be_u32>(device_va + kDeviceOffsetPresentationInterval);
-  const uint32_t refreshes = RefreshesPerFrame(interval_word ? uint32_t(*interval_word) : 1);
+  uint32_t refreshes = RefreshesPerFrame(interval_word ? uint32_t(*interval_word) : 1);
+  // los1-nx (2026-10-28): the 30 fps cap at stock clocks (src/los_stock_clocks.cpp).
+  if (refreshes && refreshes < ::los::MinRefreshesPerFrame()) refreshes = ::los::MinRefreshesPerFrame();
   const auto now = Clock::now();
   // sa2-nx (2026-10-20, banjo_display_sync, Banjo's latency set): on the Switch the release follows the display's own
   // refresh (its vsync event) plus a measured phase, as late as the frame's image still makes the refresh, instead of
