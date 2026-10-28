@@ -237,6 +237,11 @@ bool PackageScales() {
   static const bool scales = [] {
     Packages &all = Open();
     static constexpr char kScaleCode[] = ">> 26u) & 7u";
+    // LoS1-nx (2026-10-28): none of Lords of Shadow's 2,006 shaders reads a texture's scale code (they fetch 2D
+    // textures without texel offsets), so the test above found no package scaling. The pixel position's
+    // resolution_scale word, which pass fragscale folds to 1.0, is read by 596 of them: its presence also means a
+    // package made without scale1 and fragscale.
+    static constexpr char kFragScale[] = "uintBitsToFloat(g_UboShared.v[83u].z)";
     bool any = false;
     for (Package &p : all.source) {
       if (!p.ok)
@@ -253,7 +258,8 @@ bool PackageScales() {
                                 : ZSTD_decompressDCtx(p.dctx, text.data(), e.size, p.data + e.offset, e.compressedSize);
         if (ZSTD_isError(n) || n != e.size)
           continue;
-        found = std::search(text.begin(), text.end(), kScaleCode, kScaleCode + sizeof(kScaleCode) - 1) != text.end();
+        found = std::search(text.begin(), text.end(), kScaleCode, kScaleCode + sizeof(kScaleCode) - 1) != text.end() ||
+                std::search(text.begin(), text.end(), kFragScale, kFragScale + sizeof(kFragScale) - 1) != text.end();
       }
       if (!found) {
         REXLOG_WARN("[deko3d] the {} GLSL package was made for 1280x720 only (pass scale1): the game draws at "

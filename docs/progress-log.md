@@ -2,6 +2,25 @@
 
 Newest first. Each entry: what was done, what was found, what is next.
 
+## 2026-10-28: stock clocks (960x540)
+
+- Asked for: 30 fps on stock clocks, as ds3-nx (Dead Space 3 on ReXGlue) gets with 960x540 and the official 460.8 MHz
+  handheld GPU profile. Mark's 2026-10-26 console log was not at stock clocks: CPU 1785-2091 MHz and GPU 460.8 MHz
+  (sys-clk). Heavy scenes there: 17-25 fps, the GPU at 40-49 ms a frame, the main game thread at about 90 % of a core.
+- The Switch could not render below 720p: the shader package was made with the passes scale1 and fragscale (1x only),
+  and Renut had no 540p scale. Now: Renut's scale code 7 is 3/4 (it was 4/3, the full ambient occlusion of 480p, never
+  drawn on deko3d; patch `reblue-XenosRecomp-540p-scale.patch` for the shaders' table), `renut_resolution = "540p"`,
+  and `build_switch.sh shaders` makes the package without the two passes (sa2-nx's 1.0.3.1 list).
+- None of this game's 2,006 shaders reads a texture's scale code, so the package test (deko3d::PackageScales) found no
+  scaling package and kept 1x; it now also accepts the resolution_scale word that fragscale folds (596 shaders).
+- `los_stock_clocks.cpp`: handheld with the CPU at its stock clock at start: 960x540, unless los.toml sets
+  sa2_render_height_handheld (`los_stock_540p = false` turns it off). sa2-nx's `sa2_gpu_boost.cpp`: the official
+  handheld GPU profile (460.8 MHz, memory unchanged).
+- Linux run at 540p (lavapipe): the 3D title scene draws right at 960x540. Switch build: 21 steps (the shader package
+  and an incremental build). Shader variant file: the PC list's 350 variants made again (110 unchanged) plus the
+  console's own, 417 in all.
+- Next: Mark's stock-clock console log (with and without heavy scenes): GPU time against the main thread's time.
+
 ## 2026-10-26: Renut's renderer mapped to this game
 
 - Mark's first play (emulated GPU): the first level plays through; only the Travel Book menus flicker (the emulated
