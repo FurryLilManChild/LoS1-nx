@@ -33,6 +33,10 @@
 #include "los_builtin_config.h"  // generated from app/los_switch_defaults.toml and app/los_switch.toml (CMake)
 #endif
 
+namespace los {
+void ApplyStockClockDefaults();  // los_stock_clocks.cpp
+}
+
 class LosApp : public rex::ReXApp {
  public:
   using rex::ReXApp::ReXApp;
@@ -89,6 +93,10 @@ class LosApp : public rex::ReXApp {
   }
 
   void OnPreSetup(rex::RuntimeConfig& config) override {
+    // LoS1-nx (2026-10-28): stock clocks: 960x540 in handheld at the stock CPU clock, and the official 460.8 MHz
+    // handheld GPU profile (src/los_stock_clocks.cpp, src/cpu/sa2_gpu_boost.cpp).
+    los::ApplyStockClockDefaults();
+    sa2::enh::ApplyGpuBoost();
 #if LOS_RENUT_RENDERER
     if (banjo::renut_gpu::Active()) {
       // No SDK graphics system and no GPU plugin: the renderer is the app's (its own swapchain and thread).

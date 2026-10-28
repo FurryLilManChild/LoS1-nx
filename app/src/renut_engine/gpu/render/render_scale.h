@@ -12,16 +12,19 @@ namespace renut::gpu {
 
 // Host pixels per guest pixel of a render target, and of what resolves from
 // it, as one of a fixed set of ratios: the render resolutions
-// (renut_resolution: 1x, 480p, 1080p, 1440p, 4K) and the targets that render
-// finer than the rest (graphics_options.h: shadow maps at 4x, ambient
-// occlusion at twice the resolution: 4/3, 6x). Code 0 is 1x, the scale of all
+// (renut_resolution: 1x, 480p, 1080p, 1440p, 4K, and 540p) and the targets
+// that render finer than the rest (graphics_options.h: shadow maps at 4x,
+// ambient occlusion at twice the resolution: 6x). LoS1-nx (2026-10-28): code 7
+// is 3/4 (540p, 960x540: the Switch's stock clocks), no longer 4/3 (the full
+// ambient occlusion of 480p, which the deko3d renderer never draws; on the PC
+// it now stays at the scene's scale). Code 0 is 1x, the scale of all
 // content that is not rendered (guest textures). Shaders get the code in the
 // descriptor index (kResolutionScaleShift) and have the same factors
 // (renutTextureScale in shader_common.h).
 struct RenderScale {
   static constexpr uint32_t kCount = 8;
-  static constexpr uint32_t kNumerators[kCount] = {1, 2, 3, 2, 3, 4, 6, 4};
-  static constexpr uint32_t kDenominators[kCount] = {1, 3, 2, 1, 1, 1, 1, 3};
+  static constexpr uint32_t kNumerators[kCount] = {1, 2, 3, 2, 3, 4, 6, 3};
+  static constexpr uint32_t kDenominators[kCount] = {1, 3, 2, 1, 1, 1, 1, 4};
 
   uint32_t code = 0;
 

@@ -8,8 +8,11 @@ license_mask = 1
 # Renut's Direct3D-level renderer on deko3d (the NRO has no Vulkan driver); its game shaders are built into the NRO.
 sa2_renderer = "renut"
 renut_gpu_backend = "deko3d"
-sa2_render_height_handheld = 720
+# Handheld: 1280x720, or 960x540 when the CPU is at its stock clock at start (src/los_stock_clocks.cpp: not set here,
+# so that a sa2_render_height_handheld in los.toml is the player's own). Docked: 1280x720.
 sa2_render_height_docked = 720
+# The official 460.8 MHz handheld GPU profile (not an overclock; src/cpu/sa2_gpu_boost.cpp). false = 307.2 MHz.
+sa2_gpu_boost = true
 # The game files read from game_root/ as they are. Not one pack file (game_root.nxpack, as Mirror of Fate's build has):
 # this game's files are 6.7 GB, and a FAT32 card holds no file over 4 GB.
 asset_pack = false

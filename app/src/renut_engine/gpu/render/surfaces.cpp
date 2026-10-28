@@ -38,9 +38,9 @@ REXCVAR_DEFINE_BOOL(sa2_renut_dock_resolution, true, "SA2/Renderer",
                     "renut_resolution");
 
 REXCVAR_DEFINE_STRING(renut_resolution, "720p", "Nuts&Bolts/Graphics",
-                      "Internal render resolution, by its height: 480p, 720p (the game's own), "
+                      "Internal render resolution, by its height: 480p, 540p, 720p (the game's own), "
                       "1080p, 1440p or 4K (2160 lines). Applies from the next frame.")
-    .allowed({"480p", "720p", "1080p", "1440p", "4K"});
+    .allowed({"480p", "540p", "720p", "1080p", "1440p", "4K"});
 // sa2-nx (2026-10-20, the user's request: MSAA for the final build, 2x): SA2 makes every render target single-sample,
 // so Renut's multisampling (N&B's targets are multisampled: banjo-nx's resolves, depth resolves and readbacks of them)
 // never ran. The game's single-sample targets get this many samples on the host, as the native renderer's sa2_msaa did;
@@ -280,6 +280,7 @@ void LatchResolutionScaleLocked() {
                     : resolution == "1080p" ? 2u
                     : resolution == "1440p" ? 3u
                     : resolution == "4K"    ? 4u
+                    : resolution == "540p"  ? 7u   // LoS1-nx (2026-10-28): 960x540
                                             : 0u};
   // sa2-nx (2026-10-20, 1.0.3.1): the console's mode picks the resolution (sa2_renut_dock_resolution).
   static const bool follow_mode = REXCVAR_GET(sa2_renut_dock_resolution);
@@ -287,12 +288,12 @@ void LatchResolutionScaleLocked() {
   if (follow_mode) {
     const int32_t height = sa2::render::RenderHeightOf(docked);
     RenderScale mode;
-    // The render resolutions only (codes 0-4: 720p, 480p, 1080p, 1440p, 2160p).
-    if (height <= 0 || !RenderScale::FromRatio(uint32_t(height), 720, mode) || mode.code > 4) {
+    // The render resolutions only (codes 0-4: 720p, 480p, 1080p, 1440p, 2160p; LoS1-nx: and 7, 540p).
+    if (height <= 0 || !RenderScale::FromRatio(uint32_t(height), 720, mode) || (mode.code > 4 && mode.code != 7)) {
       static bool logged = false;
       if (!logged) {
         logged = true;
-        RGPU_WARN("sa2_render_height_{} = {} is not one of 480, 720, 1080, 1440, 2160: 720 (1280x720)",
+        RGPU_WARN("sa2_render_height_{} = {} is not one of 480, 540, 720, 1080, 1440, 2160: 720 (1280x720)",
                   docked ? "docked" : "handheld", height);
       }
       mode = {};

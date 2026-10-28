@@ -73,7 +73,11 @@ shaders)
     out/deko3d_shaders/spirv_pass.cpp app/thirdparty/reblue-XenosRecomp/XenosRecomp/shader_common.h
   python3 tools/deko3d_shaders.py --spirv out/deko3d_shaders/spirv --out out/deko3d_shaders/glsl --no-uam
   # --check exits 1 when a shader is kept unoptimised (uam failed on its rewrite): 32 of Lords of Shadow's.
-  python3 tools/deko3d_glsl_opt.py --in out/deko3d_shaders/glsl/glsl --out out/deko3d_shaders/glsl_opt --check || true
+  # Every pass but scale1 and fragscale (2026-10-28): those fold the texture scale code to 1x, and the package then
+  # keeps 1280x720 (deko3d::PackageScales); without them 960x540 (stock clocks) and 1080p draw right. sa2-nx's 1.0.3.1
+  # list.
+  PASSES=$(python3 -c 'import sys; sys.path.insert(0, "tools"); import deko3d_glsl_opt as o; print(",".join(n for n, _ in o.PASSES if n not in ("scale1", "fragscale")))')
+  python3 tools/deko3d_glsl_opt.py --in out/deko3d_shaders/glsl/glsl --out out/deko3d_shaders/glsl_opt --passes "$PASSES" --check || true
   python3 tools/deko3d_shader_package.py --glsl out/deko3d_shaders/glsl_opt --out app/out/renut_switch
   python3 tools/renut_switch_shader_cache.py --pc out/linux
   ;;

@@ -1,0 +1,21 @@
+--- a/XenosRecomp/shader_common.h
++++ b/XenosRecomp/shader_common.h
+@@ -248,7 +248,8 @@
+ }
+ 
+ // Host texels per guest texel, by the host's RenderScale code (render_scale.h): 1x, 2/3 (480p),
+-// 1.5 (1080p), 2 (1440p), 3 (4K), 4, 6 and 4/3 (shadow maps and ambient occlusion rendered finer).
++// 1.5 (1080p), 2 (1440p), 3 (4K), 4, 6 (shadow maps and ambient occlusion rendered finer) and 3/4 (540p;
++// LoS1-nx: code 7 was 4/3, the full ambient occlusion of 480p, which the deko3d renderer never draws).
+ float renutTextureScale(uint resourceDescriptorIndex)
+ {
+     const uint code = (resourceDescriptorIndex >> RENUT_RESOLUTION_SCALE_SHIFT) & 7u;
+@@ -259,7 +260,7 @@
+            select(code == 4u, 3.0,
+            select(code == 5u, 4.0,
+            select(code == 6u, 6.0,
+-           select(code == 7u, 4.0 / 3.0, 1.0)))))));
++           select(code == 7u, 3.0 / 4.0, 1.0)))))));
+ }
+ 
+ // A scaled texture's guest width and height from its host ones.

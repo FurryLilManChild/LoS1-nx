@@ -5,3 +5,7 @@ sa2_vsync_relaxed = true
 
 # Face buttons by position, as on an Xbox pad (bottom = A). false = by letter.
 input_xbox_layout = true
+
+# Handheld render resolution. Left out: 1280x720, or 960x540 when the console runs at its stock clocks (no
+# overclock). Set it to choose: 540 (960x540, faster) or 720 (1280x720, sharper).
+# sa2_render_height_handheld = 720
