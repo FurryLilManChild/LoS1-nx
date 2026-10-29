@@ -51,7 +51,7 @@ namespace {
 constexpr uint32_t kListHead = 0x82D1AFDC;
 
 bool GuestAddress(uint32_t va) {
-  return va >= 0x82000000u && va < 0x90000000u;
+  return va >= 0x40000000u && va < 0xA0000000u;  // heap and image (the newest variables are on the heap)
 }
 
 uint32_t Rd32(uint32_t va) {
@@ -77,6 +77,15 @@ std::string Str(uint32_t va) {
   }
   return s;
 }
+
+// The settings in force (phase A), kept by EngineVarsOnSwap at every Swap too: the game sets some of its variables
+// again on its own (R_DistMLOD1 every frame, Linux run 2026-10-28), faster than the thread's once a second.
+constexpr size_t kMaxActive = 32;
+struct Active {
+  std::atomic<uint32_t> va{0};
+  std::atomic<uint32_t> word{0};
+};
+Active g_active[kMaxActive];
 
 struct Var {
   uint32_t va;
@@ -149,6 +158,7 @@ void Run() {
   const int ab = REXCVAR_GET(los_engine_vars_ab);
   bool dumped = !REXCVAR_GET(los_engine_vars_dump);
   std::vector<uint32_t> saved;  // the game's own values, for the B phases
+  std::vector<int> written(settings.size(), 0);
   int last_phase = -1, missing_logged = 0;
   const auto start = std::chrono::steady_clock::now();
   for (;;) {
@@ -190,9 +200,19 @@ void Run() {
         const uint32_t now_word = Rd32(found->va + 44);
         if (phase == 0) {
           if (last_phase != 0) saved[k] = now_word;  // the game's value, from before A
-          if (now_word != word) Wr32(found->va + 44, word);
-        } else if (last_phase == 0) {
-          Wr32(found->va + 44, saved[k]);  // back to the game's value for B
+          if (now_word != word) {
+            Wr32(found->va + 44, word);
+            if (written[k]++ < 2)  // the first write, and the first time the game had set it back
+              REXLOG_INFO("[engine vars] {} at {} s: {} -> {}{}", s.name, secs, ValueText(*found, now_word),
+                          ValueText(*found, word), written[k] > 1 ? " (the game sets it back: kept at every Swap)" : "");
+          }
+          if (k < kMaxActive) {
+            g_active[k].word.store(word, std::memory_order_relaxed);
+            g_active[k].va.store(found->va + 44, std::memory_order_release);
+          }
+        } else {
+          if (k < kMaxActive) g_active[k].va.store(0, std::memory_order_release);
+          if (last_phase == 0) Wr32(found->va + 44, saved[k]);  // back to the game's value for B
         }
       }
       if (phase != last_phase) {
@@ -208,6 +228,16 @@ void Run() {
 }
 
 }  // namespace
+
+// From the Swap hook (sa2_renut_pacing.cpp, the game thread): the settings again, before the next frame.
+void EngineVarsOnSwap() {
+  for (Active& a : g_active) {
+    const uint32_t va = a.va.load(std::memory_order_acquire);
+    if (!va) continue;
+    const uint32_t word = a.word.load(std::memory_order_relaxed);
+    if (Rd32(va) != word) Wr32(va, word);
+  }
+}
 
 void StartEngineVars() {
   if (REXCVAR_GET(los_engine_vars).empty() && !REXCVAR_GET(los_engine_vars_dump)) return;

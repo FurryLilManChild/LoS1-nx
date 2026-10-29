@@ -49,6 +49,7 @@ extern ::sa2::enh::Enhancement g_vsync_relaxed;
 
 namespace los {
 uint32_t MinRefreshesPerFrame();  // los_stock_clocks.cpp
+void EngineVarsOnSwap();          // los_engine_vars.cpp
 }
 
 namespace sa2::renut {
@@ -154,6 +155,7 @@ uint64_t g_display_previous_ns = 0;
 
 void PaceSwap(uint32_t device_va) {
   static const bool on = REXCVAR_GET(sa2_renut_vblank_pacing);
+  ::los::EngineVarsOnSwap();  // los1-nx (2026-10-28): the engine variables set from los.toml
   if (!on || !device_va) return;
   const auto *interval_word = ::renut::gpu::GuestPtr<const be_u32>(device_va + kDeviceOffsetPresentationInterval);
   uint32_t refreshes = RefreshesPerFrame(interval_word ? uint32_t(*interval_word) : 1);

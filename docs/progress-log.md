@@ -2,6 +2,19 @@
 
 Newest first. Each entry: what was done, what was found, what is next.
 
+## 2026-10-28 (evening): the engine's own console variables
+
+- Fresh look at 30 fps at stock clocks. The engine keeps the PC version's detail switches as console variables (the
+  decrypted image's strings: R_ShadowMaps, R_LightShadows, R_LightLimit "Max. enabled lights per model (0..6)",
+  R_UseMLOD, R_DrawMLODMin, R_DistMLOD1 "Model LOD 1 distance coef." and 1,760 more), and its Lua has the PC's video
+  menu and a debug menu over them. Layout from their static constructors (sub_821A2290): a linked list, head
+  0x82D1AFDC, next +28, name +32, type +41 (2 integer, 4 float), value +44, default +48.
+- Not a lead: catch-up work at low frame rates (PhysX on its own thread under 1 %; the main thread's time per frame
+  followed the CPU clock and not the resolution), and the thread layout (the main thread already has core 0 alone).
+- `src/los_engine_vars.cpp`: `los_engine_vars = "NAME=VALUE;..."` sets them, every second and at every Swap (the
+  game sets R_DistMLOD1 back every frame); `los_engine_vars_ab = <s>` alternates with the game's own values, logged;
+  `los_engine_vars_dump` lists all. Linux run: 1,764 variables found, the settings hold.
+
 ## 2026-10-28: stock clocks (960x540)
 
 - Asked for: 30 fps on stock clocks, as ds3-nx (Dead Space 3 on ReXGlue) gets with 960x540 and the official 460.8 MHz
