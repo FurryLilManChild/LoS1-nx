@@ -12,6 +12,7 @@
 //   los_fps_cap              -1 auto / 0 none / 30 (los_stock_clocks.cpp)
 // Presets: Quality = full shadows, 1280x720; Balanced = world shadows, auto; Performance = no shadows, 960x540.
 // The frame cap stays the player's choice (auto in all three).
+#include <algorithm>
 #include <atomic>
 #include <filesystem>
 #include <fstream>
@@ -58,6 +59,8 @@ constexpr Preset kPresets[] = {
 };
 
 std::filesystem::path g_config_path;
+constexpr float kScale = 2.0f;  // padding and widths (1.0 was too small in handheld)
+ImFont* g_font = nullptr;       // ImGui's default font at 26 px (twice its 13 px design, so it stays sharp)
 std::atomic<bool> g_open{false};
 
 void SetShadows(const std::string& v) {
@@ -150,6 +153,13 @@ bool SaveToConfig(std::string* error) {
   return true;
 }
 
+// A row's label, then its choices on the same line.
+void Label(const char* text) {
+  ImGui::AlignTextToFramePadding();
+  ImGui::TextUnformatted(text);
+  ImGui::SameLine(170 * kScale);
+}
+
 class LosMenuDialog final : public rex::ui::ImGuiDialog {
  public:
   explicit LosMenuDialog(rex::ui::ImGuiDrawer* drawer) : ImGuiDialog(drawer) { g_open = true; }
@@ -159,7 +169,13 @@ class LosMenuDialog final : public rex::ui::ImGuiDialog {
   void OnClose() override;
 
   void OnDraw(ImGuiIO& io) override {
-    const ImVec2 size(560, 0);
+    // Large on purpose (Mark, 2026-10-29: the first build's text was hard to read in handheld): the text at
+    // kScale of the overlay font, padding and spacing with it, the window most of the screen's width.
+    const float s = kScale;
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10 * s, 4 * s));
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(12 * s, 5 * s));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(14 * s, 12 * s));
+    const ImVec2 size(std::min(io.DisplaySize.x * 0.92f, 620 * s), 0);
     ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f), ImGuiCond_Always,
                             ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(size, ImGuiCond_Always);
@@ -169,8 +185,10 @@ class LosMenuDialog final : public rex::ui::ImGuiDialog {
                       ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
                           ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize)) {
       ImGui::End();
+      ImGui::PopStyleVar(3);
       return;
     }
+    if (g_font) ImGui::PushFont(g_font, g_font->LegacySize);
     if (first_) {
       ImGui::SetKeyboardFocusHere();
       first_ = false;
@@ -185,7 +203,7 @@ class LosMenuDialog final : public rex::ui::ImGuiDialog {
     for (const Preset& p : kPresets) {
       const bool on = shadows == p.shadows && res == p.resolution;
       if (on) ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
-      if (ImGui::Button(p.name, ImVec2(170, 0))) {
+      if (ImGui::Button(p.name, ImVec2(180 * s, 0))) {
         SetShadows(p.shadows);
         SetResolution(p.resolution);
       }
@@ -198,34 +216,34 @@ class LosMenuDialog final : public rex::ui::ImGuiDialog {
     ImGui::TextDisabled("%s", help);
     ImGui::Separator();
 
-    ImGui::TextUnformatted("Shadows");
+    Label("Shadows");
     if (ImGui::RadioButton("Full##sh", shadows == "full")) SetShadows("full");
     ImGui::SameLine();
     if (ImGui::RadioButton("World only##sh", shadows == "world")) SetShadows("world");
     ImGui::SameLine();
     if (ImGui::RadioButton("Off##sh", shadows == "off")) SetShadows("off");
 
-    ImGui::TextUnformatted("Handheld resolution");
+    Label("Resolution");
     if (ImGui::RadioButton("Auto##res", res == "auto")) SetResolution("auto");
     ImGui::SameLine();
     if (ImGui::RadioButton("960x540##res", res == "540")) SetResolution("540");
     ImGui::SameLine();
     if (ImGui::RadioButton("1280x720##res", res == "720")) SetResolution("720");
-    ImGui::TextDisabled("Auto: 960x540 at the stock CPU clock, 1280x720 when overclocked");
+    ImGui::TextDisabled("Handheld. Auto: 960x540 at the stock CPU clock, 1280x720 overclocked");
 
-    ImGui::TextUnformatted("Frame rate cap (handheld)");
+    Label("Frame cap");
     if (ImGui::RadioButton("Auto##cap", cap == -1)) SetCap(-1);
     ImGui::SameLine();
     if (ImGui::RadioButton("30 fps##cap", cap == 30)) SetCap(30);
     ImGui::SameLine();
     if (ImGui::RadioButton("None##cap", cap == 0)) SetCap(0);
-    ImGui::TextDisabled("Auto: 30 fps at the stock CPU clock, no cap when overclocked");
+    ImGui::TextDisabled("Handheld. Auto: 30 fps at the stock CPU clock, none overclocked");
     ImGui::Separator();
 
     ImGui::TextWrapped("%s", ClockStatus().c_str());
     ImGui::Separator();
 
-    if (ImGui::Button("Save and close", ImVec2(250, 0))) {
+    if (ImGui::Button("Save and close", ImVec2(270 * s, 0))) {
       std::string error;
       if (SaveToConfig(&error)) {
         Close();
@@ -234,10 +252,12 @@ class LosMenuDialog final : public rex::ui::ImGuiDialog {
       }
     }
     ImGui::SameLine();
-    if (ImGui::Button("Close", ImVec2(250, 0))) Close();
+    if (ImGui::Button("Close", ImVec2(270 * s, 0))) Close();
     ImGui::TextDisabled("Changes apply at once. Close keeps them until the game is restarted.");
     if (!message_.empty()) ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.4f, 1.0f), "%s", message_.c_str());
+    if (g_font) ImGui::PopFont();
     ImGui::End();
+    ImGui::PopStyleVar(3);
   }
 
  private:
@@ -263,6 +283,15 @@ void ApplyMenuSettings() {
 
 bool MenuOpen() {
   return g_open.load(std::memory_order_relaxed);
+}
+
+// From LosApp::OnConfigureFonts: the menu's own large font, baked into the overlay's font atlas.
+void AddMenuFont(ImFontAtlas* atlas) {
+  ImFontConfig cfg;
+  cfg.SizePixels = 26.0f;
+  cfg.OversampleH = cfg.OversampleV = 1;
+  cfg.PixelSnapH = true;
+  g_font = atlas->AddFontDefault(&cfg);
 }
 
 // From LosApp::OnCreateDialogs: - and + together (Switch) or F5 (PC) opens and closes the menu.

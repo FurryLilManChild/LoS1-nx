@@ -38,6 +38,7 @@ void ApplyStockClockDefaults();  // los_stock_clocks.cpp
 void StartEngineVars();          // los_engine_vars.cpp
 void ApplyMenuSettings();        // los_menu.cpp
 bool MenuOpen();                 // los_menu.cpp
+void AddMenuFont(ImFontAtlas* atlas);  // los_menu.cpp
 void RegisterMenu(rex::ui::ImGuiDrawer* drawer, const std::filesystem::path& config_path);  // los_menu.cpp
 }
 
@@ -102,6 +103,13 @@ class LosApp : public rex::ReXApp {
     los::RegisterMenu(drawer, config_file_path());
 #else
     (void)drawer;
+#endif
+  }
+  void OnConfigureFonts(ImFontAtlas* atlas) override {
+#if LOS_RENUT_RENDERER
+    los::AddMenuFont(atlas);
+#else
+    (void)atlas;
 #endif
   }
   bool AppOverlayOpen() const override {
