@@ -35,6 +35,7 @@
 
 namespace los {
 void ApplyStockClockDefaults();  // los_stock_clocks.cpp
+void StartEngineVars();          // los_engine_vars.cpp
 }
 
 class LosApp : public rex::ReXApp {
@@ -96,6 +97,9 @@ class LosApp : public rex::ReXApp {
     // LoS1-nx (2026-10-28): stock clocks: 960x540 in handheld at the stock CPU clock, and the official 460.8 MHz
     // handheld GPU profile (src/los_stock_clocks.cpp, src/cpu/sa2_gpu_boost.cpp).
     los::ApplyStockClockDefaults();
+#if LOS_RENUT_RENDERER
+    los::StartEngineVars();  // the engine's own console variables from los.toml (2026-10-28)
+#endif
     sa2::enh::ApplyGpuBoost();
 #if LOS_RENUT_RENDERER
     if (banjo::renut_gpu::Active()) {
