@@ -15,11 +15,17 @@
 //   +44 value (big-endian s32 or f32)    +48 default
 //
 // Keys (los.toml):
-//   los_engine_vars = "R_ShadowMaps=0;R_LightLimit=2"   set these, and again every second (the game's scripts set
-//                                                       some per scene: SetShadowSettings)
-//   los_engine_vars_ab = 20     alternate every 20 s between the set above and the game's own values, logging each
-//                               switch ([engine vars] A / B), so one session measures both (0 = always set)
-//   los_engine_vars_dump = true every variable, its type and value, in the log once (20 s after start)
+//   los_engine_vars = "R_ShadowMaps=0;R_LightLimit=2"   set these (every second and at every Swap: the game sets some
+//                                                       back itself, R_DistMLOD1 every frame)
+//   los_engine_vars_ab = 20     the phase length in seconds: alternate between los_engine_vars and the game's own
+//                               values (0 = los_engine_vars always)
+//   los_engine_vars_cycle = "|R_ShadowMaps=0||R_LightLimit=1"   instead: phases separated by '|', each a set of
+//                               settings or empty (the game's own values), in turn, los_engine_vars_ab seconds each
+//                               (20 if 0), round and round
+//   los_engine_vars_dump = true every variable, its type and value, in the log once
+// Each phase's end logs its frame rate, counted from the Swaps of that phase alone ([engine vars] phase N ... fps), so
+// the phases need not line up with the 10 s reports (the shadows test of 2026-10-28: half of its 10 s reports
+// straddled two phases).
 #include <atomic>
 #include <chrono>
 #include <cstdint>
@@ -42,6 +48,9 @@ REXCVAR_DEFINE_INT32(los_engine_vars_ab, 0, "LoS1",
                      "Test: alternate every this many seconds between los_engine_vars and the game's own values "
                      "(0 = always los_engine_vars)")
     .range(0, 600);
+REXCVAR_DEFINE_STRING(los_engine_vars_cycle, "", "LoS1",
+                      "Test: phases of engine variable settings separated by '|' (an empty phase = the game's own "
+                      "values), los_engine_vars_ab seconds each, round and round, each phase's frame rate logged");
 REXCVAR_DEFINE_BOOL(los_engine_vars_dump, false, "LoS1",
                     "Test: write every engine console variable with its type and value to the log once");
 
@@ -86,6 +95,7 @@ struct Active {
   std::atomic<uint32_t> word{0};
 };
 Active g_active[kMaxActive];
+std::atomic<uint32_t> g_swaps{0};  // every Swap, for the phases' frame rates
 
 struct Var {
   uint32_t va;
@@ -152,17 +162,63 @@ std::vector<Setting> Parse(const std::string& spec) {
   return out;
 }
 
+std::vector<std::string> Split(const std::string& text, char sep) {
+  std::vector<std::string> out;
+  size_t at = 0;
+  for (;;) {
+    const size_t end = text.find(sep, at);
+    out.push_back(text.substr(at, end == std::string::npos ? std::string::npos : end - at));
+    if (end == std::string::npos) return out;
+    at = end + 1;
+  }
+}
+
+// The word to write for a setting into a variable of its type.
+uint32_t WordFor(const Setting& s, const Var& v) {
+  uint32_t word = s.word;
+  if (v.type == 4 && !s.is_float) {
+    const float f = float(int32_t(s.word));
+    std::memcpy(&word, &f, 4);
+  } else if (v.type == 2 && s.is_float) {
+    float f;
+    std::memcpy(&f, &s.word, 4);
+    word = uint32_t(int32_t(f));
+  }
+  return word;
+}
+
 void Run() {
   std::this_thread::sleep_for(std::chrono::seconds(8));
-  const std::vector<Setting> settings = Parse(REXCVAR_GET(los_engine_vars));
-  const int ab = REXCVAR_GET(los_engine_vars_ab);
+  // The phases: a cycle, or los_engine_vars against the game's own values, or los_engine_vars always.
+  std::vector<std::string> specs;
+  const std::string cycle = REXCVAR_GET(los_engine_vars_cycle);
+  int seconds = REXCVAR_GET(los_engine_vars_ab);
+  if (!cycle.empty()) {
+    specs = Split(cycle, '|');
+    if (seconds <= 0) seconds = 20;
+  } else if (!REXCVAR_GET(los_engine_vars).empty()) {
+    specs.push_back(REXCVAR_GET(los_engine_vars));
+    if (seconds > 0) specs.push_back("");
+  }
+  std::vector<std::vector<Setting>> phases;
+  for (const std::string& spec : specs) phases.push_back(Parse(spec));
   bool dumped = !REXCVAR_GET(los_engine_vars_dump);
-  std::vector<uint32_t> saved;  // the game's own values, for the B phases
-  std::vector<int> written(settings.size(), 0);
-  int last_phase = -1, missing_logged = 0;
-  const auto start = std::chrono::steady_clock::now();
+
+  struct Touched {
+    std::string name;
+    uint32_t va = 0;
+    uint32_t game_word = 0;  // the game's value, from before the phase that set it
+    bool ours = false;       // set by the current phase
+  };
+  std::vector<Touched> touched;
+  int phase = -1, missing_logged = 0;
+  uint32_t phase_swaps = 0;
+  auto phase_start = std::chrono::steady_clock::now();
+  const auto start = phase_start;
+
   for (;;) {
-    const auto secs = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - start).count();
+    const auto now = std::chrono::steady_clock::now();
+    const auto secs = std::chrono::duration_cast<std::chrono::seconds>(now - start).count();
     if (!Rd32(kListHead)) {
       std::this_thread::sleep_for(std::chrono::seconds(1));
       continue;
@@ -175,55 +231,67 @@ void Run() {
         REXLOG_INFO("[engine vars]   {} type {} = {} (default {})", v.name, int(v.type),
                     ValueText(v, Rd32(v.va + 44)), ValueText(v, Rd32(v.va + 48)));
     }
-    if (!settings.empty()) {
-      const int phase = ab > 0 ? int((secs / ab) % 2) : 0;  // 0 = A (set), 1 = B (the game's)
-      if (saved.size() != settings.size()) saved.assign(settings.size(), 0);
-      for (size_t k = 0; k < settings.size(); ++k) {
-        const Setting& s = settings[k];
-        const Var* found = nullptr;
-        for (const Var& v : vars)
-          if (v.name == s.name) found = &v;
-        if (!found || (found->type != 2 && found->type != 4)) {
-          if (missing_logged++ < 32)
-            REXLOG_WARN("[engine vars] {}: {}", s.name, found ? "not an integer or float variable" : "not found");
-          continue;
-        }
-        uint32_t word = s.word;
-        if (found->type == 4 && !s.is_float) {
-          const float f = float(int32_t(s.word));
-          std::memcpy(&word, &f, 4);
-        } else if (found->type == 2 && s.is_float) {
-          float f;
-          std::memcpy(&f, &s.word, 4);
-          word = uint32_t(int32_t(f));
-        }
-        const uint32_t now_word = Rd32(found->va + 44);
-        if (phase == 0) {
-          if (last_phase != 0) saved[k] = now_word;  // the game's value, from before A
-          if (now_word != word) {
-            Wr32(found->va + 44, word);
-            if (written[k]++ < 2)  // the first write, and the first time the game had set it back
-              REXLOG_INFO("[engine vars] {} at {} s: {} -> {}{}", s.name, secs, ValueText(*found, now_word),
-                          ValueText(*found, word), written[k] > 1 ? " (the game sets it back: kept at every Swap)" : "");
-          }
-          if (k < kMaxActive) {
-            g_active[k].word.store(word, std::memory_order_relaxed);
-            g_active[k].va.store(found->va + 44, std::memory_order_release);
-          }
-        } else {
-          if (k < kMaxActive) g_active[k].va.store(0, std::memory_order_release);
-          if (last_phase == 0) Wr32(found->va + 44, saved[k]);  // back to the game's value for B
-        }
-      }
-      if (phase != last_phase) {
-        REXLOG_INFO("[engine vars] {} at {} s: {}", phase == 0 ? "A (los_engine_vars set)" : "B (the game's own values)",
-                    secs, REXCVAR_GET(los_engine_vars));
-        last_phase = phase;
-      }
-    } else if (dumped) {
-      return;  // nothing to set, the dump written
+    if (phases.empty()) {
+      if (dumped) return;  // nothing to set, the dump written
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+      continue;
     }
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    const int want = seconds > 0 && phases.size() > 1 ? int((secs / seconds) % int64_t(phases.size())) : 0;
+    if (want != phase) {
+      // The phase that ends: its frame rate from its own Swaps.
+      const uint32_t swaps = g_swaps.load(std::memory_order_relaxed);
+      if (phase >= 0) {
+        const double t = std::chrono::duration<double>(now - phase_start).count();
+        REXLOG_INFO("[engine vars] phase {} ({}) ended: {} frames in {:.1f} s = {:.1f} fps", phase,
+                    specs[phase].empty() ? "the game's own values" : specs[phase], swaps - phase_swaps, t,
+                    t > 0 ? double(swaps - phase_swaps) / t : 0.0);
+      }
+      phase_swaps = swaps;
+      phase_start = now;
+      // Off with the old phase's settings: the game's values back.
+      for (size_t k = 0; k < kMaxActive; ++k) g_active[k].va.store(0, std::memory_order_release);
+      for (Touched& t : touched)
+        if (t.ours) {
+          Wr32(t.va, t.game_word);
+          t.ours = false;
+        }
+      phase = want;
+      REXLOG_INFO("[engine vars] phase {} at {} s: {}", phase, secs,
+                  specs[phase].empty() ? "the game's own values" : specs[phase]);
+    }
+    // The current phase's settings: kept every second here and at every Swap (EngineVarsOnSwap).
+    size_t slot = 0;
+    for (const Setting& s : phases[phase]) {
+      const Var* found = nullptr;
+      for (const Var& v : vars)
+        if (v.name == s.name) found = &v;
+      if (!found || (found->type != 2 && found->type != 4)) {
+        if (missing_logged++ < 32)
+          REXLOG_WARN("[engine vars] {}: {}", s.name, found ? "not an integer or float variable" : "not found");
+        continue;
+      }
+      const uint32_t va = found->va + 44, word = WordFor(s, *found);
+      Touched* t = nullptr;
+      for (Touched& x : touched)
+        if (x.name == s.name) t = &x;
+      if (!t) {
+        touched.push_back({s.name, va, 0, false});
+        t = &touched.back();
+      }
+      if (!t->ours) {
+        t->va = va;
+        t->game_word = Rd32(va);
+        t->ours = true;
+        REXLOG_INFO("[engine vars]   {}: {} -> {}", s.name, ValueText(*found, t->game_word), ValueText(*found, word));
+      }
+      if (Rd32(va) != word) Wr32(va, word);
+      if (slot < kMaxActive) {
+        g_active[slot].word.store(word, std::memory_order_relaxed);
+        g_active[slot].va.store(va, std::memory_order_release);
+        ++slot;
+      }
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(250));
   }
 }
 
@@ -231,6 +299,7 @@ void Run() {
 
 // From the Swap hook (sa2_renut_pacing.cpp, the game thread): the settings again, before the next frame.
 void EngineVarsOnSwap() {
+  g_swaps.fetch_add(1, std::memory_order_relaxed);
   for (Active& a : g_active) {
     const uint32_t va = a.va.load(std::memory_order_acquire);
     if (!va) continue;
@@ -240,7 +309,9 @@ void EngineVarsOnSwap() {
 }
 
 void StartEngineVars() {
-  if (REXCVAR_GET(los_engine_vars).empty() && !REXCVAR_GET(los_engine_vars_dump)) return;
+  if (REXCVAR_GET(los_engine_vars).empty() && REXCVAR_GET(los_engine_vars_cycle).empty() &&
+      !REXCVAR_GET(los_engine_vars_dump))
+    return;
   new std::thread(Run);  // runs for the session (never joined: the process ends with it)
 }
 

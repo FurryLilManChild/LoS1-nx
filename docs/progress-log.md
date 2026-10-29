@@ -14,6 +14,11 @@ Newest first. Each entry: what was done, what was found, what is next.
 - `src/los_engine_vars.cpp`: `los_engine_vars = "NAME=VALUE;..."` sets them, every second and at every Swap (the
   game sets R_DistMLOD1 back every frame); `los_engine_vars_ab = <s>` alternates with the game's own values, logged;
   `los_engine_vars_dump` lists all. Linux run: 1,764 variables found, the settings hold.
+- Mark's console A/B (heavy scene, 540p, stock clocks): shadows, lights, light limit 1 and LOD distance 0.5 together
+  against the game's own values: about 17.5 fps against about 14 (each pair in favour, by 0 to 7 fps; he moved), the
+  render thread 13-18 ms a frame against 25-35. Shadows alone: inconclusive (90 s of the heavy scene, and half of the
+  10 s reports straddled two phases: shadows off 13.8 and 19.1 fps, on 13.7 and 13.7).
+- `los_engine_vars_cycle`: several phases in turn, each phase's frame rate counted from its own Swaps.
 
 ## 2026-10-28: stock clocks (960x540)
 
