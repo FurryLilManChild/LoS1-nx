@@ -692,6 +692,28 @@ void SwitchInputDriver::DispatchMenuShortcuts(Slot& slot, uint64_t held) {
   }
 
   /*
+   * - and + together: F5, an app's own menu (LoS1-nx's port menu, los_menu.cpp). Same UI-thread handoff.
+   */
+  {
+    const uint64_t kBitAppMenu = uint64_t(1) << 12;
+    constexpr uint64_t kMinusPlus = HidNpadButton_Minus | HidNpadButton_Plus;
+    const bool now = (held & kMinusPlus) == kMinusPlus;
+    const bool before = (slot.menu_shortcuts & kBitAppMenu) != 0;
+    if (now && !before) {
+      auto press = [] {
+        rex::ui::KeyEvent keystroke(nullptr, rex::ui::VirtualKey::kF5, 1, false, false, false, false, false);
+        rex::ui::ProcessKeyEvent(keystroke);
+      };
+      rex::ui::Window* const window = window_ui_.load(std::memory_order_acquire);
+      if (!window || !window->app_context().CallInUIThread(press)) {
+        press();
+      }
+      REXLOG_INFO("menu shortcut: F5 (- and +)");
+    }
+    slot.menu_shortcuts = now ? (slot.menu_shortcuts | kBitAppMenu) : (slot.menu_shortcuts & ~kBitAppMenu);
+  }
+
+  /*
    * L+R+ZL starts the A/B test lap (switch_perf.cpp). It sends no key to the
    * game: it talks directly to the profiler. It is kept apart from the loop
    * above because that one translates buttons into keys and this is not a key.

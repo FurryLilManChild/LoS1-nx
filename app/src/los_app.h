@@ -36,6 +36,9 @@
 namespace los {
 void ApplyStockClockDefaults();  // los_stock_clocks.cpp
 void StartEngineVars();          // los_engine_vars.cpp
+void ApplyMenuSettings();        // los_menu.cpp
+bool MenuOpen();                 // los_menu.cpp
+void RegisterMenu(rex::ui::ImGuiDrawer* drawer, const std::filesystem::path& config_path);  // los_menu.cpp
 }
 
 class LosApp : public rex::ReXApp {
@@ -93,12 +96,29 @@ class LosApp : public rex::ReXApp {
     }
   }
 
+  // The port menu (src/los_menu.cpp, 2026-10-29): - and + together on the Switch, F5 on the PC.
+  void OnCreateDialogs(rex::ui::ImGuiDrawer* drawer) override {
+#if LOS_RENUT_RENDERER
+    los::RegisterMenu(drawer, config_file_path());
+#else
+    (void)drawer;
+#endif
+  }
+  bool AppOverlayOpen() const override {
+#if LOS_RENUT_RENDERER
+    return los::MenuOpen();
+#else
+    return false;
+#endif
+  }
+
   void OnPreSetup(rex::RuntimeConfig& config) override {
     // LoS1-nx (2026-10-28): stock clocks: 960x540 in handheld at the stock CPU clock, and the official 460.8 MHz
     // handheld GPU profile (src/los_stock_clocks.cpp, src/cpu/sa2_gpu_boost.cpp).
     los::ApplyStockClockDefaults();
 #if LOS_RENUT_RENDERER
-    los::StartEngineVars();  // the engine's own console variables from los.toml (2026-10-28)
+    los::ApplyMenuSettings();  // the port menu's saved shadows choice (2026-10-29)
+    los::StartEngineVars();    // the engine's own console variables from los.toml (2026-10-28)
 #endif
     sa2::enh::ApplyGpuBoost();
 #if LOS_RENUT_RENDERER

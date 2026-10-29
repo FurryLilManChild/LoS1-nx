@@ -40,7 +40,8 @@ set(LOS_SOURCES
 option(LOS_RENUT_RENDERER "Build Renut's renderer (sa2_renderer = renut)" OFF)
 if(LOS_RENUT_RENDERER)
     list(APPEND LOS_SOURCES src/los_renut_glue.cpp src/los_resource_copies.cpp src/los_render_targets.cpp
-         src/los_engine_vars.cpp)
+         src/los_engine_vars.cpp
+         src/los_menu.cpp)
 endif()
 
 if(WIN32)

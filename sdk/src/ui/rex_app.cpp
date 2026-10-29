@@ -290,7 +290,8 @@ bool ReXApp::ConstructRuntime(const PathConfig& paths) {
     auto* input_sys = static_cast<rex::input::InputSystem*>(runtime_->input_system());
     if (input_sys) {
       input_sys->SetActiveCallback([this]() {
-        if (!debug_overlay_ && !console_overlay_ && !settings_overlay_ && !achievements_overlay_)
+        if (!debug_overlay_ && !console_overlay_ && !settings_overlay_ && !achievements_overlay_ &&
+            !AppOverlayOpen())
           return true;
 #if REX_PLATFORM_SWITCH
         // The menu and the game share the controller: while a menu window

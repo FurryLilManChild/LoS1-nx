@@ -107,6 +107,12 @@ class ReXApp : public ui::WindowedApp, public ui::WindowListener, public ui::Win
   /// Called after ImGui drawer is created. Add custom dialogs here.
   virtual void OnCreateDialogs(ui::ImGuiDrawer* drawer) { (void)drawer; }
 
+  /// An app's own menu is open (LoS1-nx's port menu): the gamepad goes to the menu, as with the SDK's overlays.
+  virtual bool AppOverlayOpen() const { return false; }
+
+  /// The player's config file (los.toml next to the executable), for an app menu that saves to it.
+  const std::filesystem::path& config_file_path() const { return config_path_; }
+
   /// Called before cleanup begins. Release custom resources here.
   virtual void OnShutdown() {}
 

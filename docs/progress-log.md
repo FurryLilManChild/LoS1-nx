@@ -2,6 +2,26 @@
 
 Newest first. Each entry: what was done, what was found, what is next.
 
+## 2026-10-29: shadow tests and the port menu
+
+- Mark's console cycles (stock clocks: CPU 1020 MHz, GPU 460.8 MHz, 960x540, 30 fps cap; the heavy scene after the
+  fight at his save, standing still; each phase's frame rate from its own Swaps):
+  - `R_ShadowMaps=0`: 17.1, 18.0 and 20.2 fps against 13.2 to 14.4 with the game's own values (about +35 %).
+  - `R_LightShadows=0`: 17.2 and 20.0 fps, the same gain; one phase showed world shadows with jagged edges (his note;
+    which phase is a guess).
+  - `R_ShadowMapsMask=1` (only the world casts shadows): about +1.2 fps (+9 %).
+  - `R_ShadowMapsSplitDrawModels` 1 or 0: about +0.5 fps. `R_LightLimit=1`, `R_DistMLOD1=0.5`: no change.
+  - Mark: no shadows looks fine, the world shadows look nicer.
+- The port menu (`src/los_menu.cpp`): - and + together on the Switch (the SDK's input driver sends F5), F5 on the PC.
+  Presets Quality (full shadows, 1280x720), Balanced (world shadows, resolution by clock), Performance (no shadows,
+  960x540); shadows full / world / off (`los_shadows`), handheld resolution auto / 540 / 720
+  (`los_handheld_resolution`), frame cap auto / 30 / none (`los_fps_cap`). Applied at once; "Save and close" rewrites
+  those three lines in los.toml (other lines kept; an older `sa2_render_height_handheld` line commented out).
+- SDK: `ReXApp::AppOverlayOpen()` so the gamepad goes to an app's own menu as it does to the SDK's overlays, and
+  `config_file_path()`.
+- `los_engine_vars.cpp`: the thread always runs; with no test key it keeps the menu's shadow setting, and restores the
+  game's values when the player picks full shadows again.
+
 ## 2026-10-28 (evening): the engine's own console variables
 
 - Fresh look at 30 fps at stock clocks. The engine keeps the PC version's detail switches as console variables (the

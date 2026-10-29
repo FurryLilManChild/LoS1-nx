@@ -17,15 +17,20 @@
 // game runs switches both (Mark changes his from the overlay after starting the game). Docked, or the CPU faster:
 // 1280x720 and the game's own frame rate, as before.
 //
-// Player keys (los.toml): sa2_render_height_handheld set there always wins over the 540p choice; los_stock_540p =
-// false keeps 1280x720 at stock clocks; los_fps_cap = 0 (no cap), 30 (always 30 in handheld), -1 (default: 30 at
-// stock clocks in handheld).
+// Player keys (los.toml; the port menu, los_menu.cpp, sets and saves them):
+//   los_handheld_resolution = "auto" (960x540 at stock clocks, 1280x720 otherwise), "540" or "720"
+//   los_fps_cap = -1 (30 fps at stock clocks in handheld), 0 (no cap), 30 (always 30 in handheld)
+// An older los.toml's sa2_render_height_handheld still wins while los_handheld_resolution is not in the file.
 #include <atomic>
 #include <cstdint>
+#include <mutex>
+#include <string>
 
 #include <rex/cvar.h>
 #include <rex/logging.h>
 #include <rex/platform.h>
+
+#include <fmt/format.h>
 
 #include "me/sa2_render_mode.h"
 
@@ -36,6 +41,10 @@
 REXCVAR_DEFINE_BOOL(los_stock_540p, true, "LoS1",
                     "Switch, handheld: when the CPU is at its stock clock (1020 MHz), render at 960x540 unless "
                     "sa2_render_height_handheld is set in los.toml. Checked at start and every 5 s");
+REXCVAR_DEFINE_STRING(los_handheld_resolution, "auto", "LoS1",
+                      "Handheld render resolution: auto (960x540 at the stock CPU clock, 1280x720 otherwise), "
+                      "540 or 720")
+    .allowed({"auto", "540", "720"});
 REXCVAR_DEFINE_INT32(los_fps_cap, -1, "LoS1",
                      "Frame rate cap in handheld mode: -1 = 30 fps at the stock CPU clock (default), 0 = none, "
                      "30 = always 30 fps")
@@ -74,28 +83,42 @@ uint32_t CpuMhz() {
   return hz / 1000000u;
 }
 
-bool g_player_set = false;
-int g_state = -1;  // -1 not decided, 0 not stock (or docked), 1 stock handheld
+bool g_player_set = false;  // an older los.toml's sa2_render_height_handheld (and no los_handheld_resolution)
+std::mutex g_update_mutex;
+uint32_t g_last_mhz = 0;
+bool g_last_docked = false;
+std::string g_last_line;
 
-// Decides from the clock and the console's mode; logs only a change.
+// Decides from the clock, the console's mode and the player's keys; logs only a change.
 void Update(bool first) {
+  std::lock_guard<std::mutex> lock(g_update_mutex);
   const bool docked = appletGetOperationMode() == AppletOperationMode_Console;
   const uint32_t mhz = CpuMhz();
   if (mhz == 0) return;
-  const int state = (!docked && mhz <= 1100) ? 1 : 0;
-  if (state == g_state) return;
-  g_state = state;
+  g_last_mhz = mhz;
+  g_last_docked = docked;
+  const bool stock = !docked && mhz <= 1100;
 
-  if (!g_player_set && REXCVAR_GET(los_stock_540p))
-    rex::cvar::SetFlagByName("sa2_render_height_handheld", state ? "540" : "720");
+  if (!g_player_set) {
+    const std::string mode = REXCVAR_GET(los_handheld_resolution);
+    const bool low = mode == "540" || (mode == "auto" && stock && REXCVAR_GET(los_stock_540p));
+    const char* want = low ? "540" : "720";
+    if (sa2::render::RenderHeightOf(false) != (low ? 540 : 720))
+      rex::cvar::SetFlagByName("sa2_render_height_handheld", want);
+  }
   const int32_t cap = REXCVAR_GET(los_fps_cap);
-  const bool capped = !docked && (cap == 30 || (cap < 0 && state == 1));
+  const bool capped = !docked && (cap == 30 || (cap < 0 && stock));
   g_min_refreshes.store(capped ? 2u : 1u, std::memory_order_relaxed);
 
-  REXLOG_INFO("[clocks] {}CPU {} MHz, {}: {} handheld render height {}{}, frame rate {}", first ? "at start: " : "now ",
-              mhz, docked ? "docked" : "handheld", state ? "stock clocks:" : "not stock clocks:",
-              sa2::render::RenderHeightOf(false), g_player_set ? " (set in los.toml)" : "",
-              capped ? "capped at 30" : "not capped");
+  const std::string line = fmt::format("CPU {} MHz, {}, {}: handheld render height {}{}, frame rate {}", mhz,
+                                       docked ? "docked" : "handheld", stock ? "stock clocks" : "not stock clocks",
+                                       sa2::render::RenderHeightOf(false),
+                                       g_player_set ? " (sa2_render_height_handheld in los.toml)" : "",
+                                       capped ? "capped at 30" : "not capped");
+  if (line != g_last_line) {
+    g_last_line = line;
+    REXLOG_INFO("[clocks] {}{}", first ? "at start: " : "now ", line);
+  }
 }
 
 void WatchThread(void*) {
@@ -110,9 +133,28 @@ Thread g_watch;
 }  // namespace
 #endif
 
+// The port menu changed a key: decide again now.
+void ApplyOptionsNow() {
+#if REX_PLATFORM_SWITCH
+  g_player_set = false;  // the menu's choice replaces an older sa2_render_height_handheld
+  Update(false);
+#endif
+}
+
+// For the port menu's status line.
+std::string ClockStatus() {
+#if REX_PLATFORM_SWITCH
+  std::lock_guard<std::mutex> lock(g_update_mutex);
+  return g_last_line;
+#else
+  return "PC: the clock checks are the Switch's";
+#endif
+}
+
 void ApplyStockClockDefaults() {
 #if REX_PLATFORM_SWITCH
-  g_player_set = rex::cvar::GetFlagSource("sa2_render_height_handheld") != rex::cvar::Source::kDefault;
+  g_player_set = rex::cvar::GetFlagSource("sa2_render_height_handheld") != rex::cvar::Source::kDefault &&
+                 rex::cvar::GetFlagSource("los_handheld_resolution") == rex::cvar::Source::kDefault;
   Update(true);
   // A small thread of its own on the third core: one clock read every 5 s.
   if (R_SUCCEEDED(threadCreate(&g_watch, WatchThread, nullptr, nullptr, 0x10000, 0x3B, 2)))

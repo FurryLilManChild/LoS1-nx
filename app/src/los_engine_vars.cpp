@@ -32,6 +32,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
@@ -96,6 +97,10 @@ struct Active {
 };
 Active g_active[kMaxActive];
 std::atomic<uint32_t> g_swaps{0};  // every Swap, for the phases' frame rates
+
+// The port menu's settings (los_menu.cpp: the shadows choice), in force whenever no test key is set.
+std::mutex g_menu_mutex;
+std::string g_menu_spec;
 
 struct Var {
   uint32_t va;
@@ -202,6 +207,7 @@ void Run() {
   }
   std::vector<std::vector<Setting>> phases;
   for (const std::string& spec : specs) phases.push_back(Parse(spec));
+  const bool test = !specs.empty();  // a test key wins over the port menu
   bool dumped = !REXCVAR_GET(los_engine_vars_dump);
 
   struct Touched {
@@ -231,10 +237,26 @@ void Run() {
         REXLOG_INFO("[engine vars]   {} type {} = {} (default {})", v.name, int(v.type),
                     ValueText(v, Rd32(v.va + 44)), ValueText(v, Rd32(v.va + 48)));
     }
-    if (phases.empty()) {
-      if (dumped) return;  // nothing to set, the dump written
-      std::this_thread::sleep_for(std::chrono::seconds(1));
-      continue;
+    if (!test) {
+      // The port menu's settings, as one phase that changes when the player changes them.
+      std::string menu;
+      {
+        std::lock_guard<std::mutex> lock(g_menu_mutex);
+        menu = g_menu_spec;
+      }
+      if (specs.empty() || specs[0] != menu) {
+        specs = {menu};
+        phases = {Parse(menu)};
+        if (phase >= 0) {
+          for (size_t k = 0; k < kMaxActive; ++k) g_active[k].va.store(0, std::memory_order_release);
+          for (Touched& t : touched)
+            if (t.ours) {
+              Wr32(t.va, t.game_word);
+              t.ours = false;
+            }
+        }
+        phase = -1;
+      }
     }
     const int want = seconds > 0 && phases.size() > 1 ? int((secs / seconds) % int64_t(phases.size())) : 0;
     if (want != phase) {
@@ -308,10 +330,13 @@ void EngineVarsOnSwap() {
   }
 }
 
+// The port menu's settings (NAME=VALUE;...), kept from the next second on.
+void SetMenuEngineVars(const std::string& spec) {
+  std::lock_guard<std::mutex> lock(g_menu_mutex);
+  g_menu_spec = spec;
+}
+
 void StartEngineVars() {
-  if (REXCVAR_GET(los_engine_vars).empty() && REXCVAR_GET(los_engine_vars_cycle).empty() &&
-      !REXCVAR_GET(los_engine_vars_dump))
-    return;
   new std::thread(Run);  // runs for the session (never joined: the process ends with it)
 }
 
