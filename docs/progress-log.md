@@ -12,6 +12,10 @@ Newest first. Each entry: what was done, what was found, what is next.
   - `R_ShadowMapsMask=1` (only the world casts shadows): about +1.2 fps (+9 %).
   - `R_ShadowMapsSplitDrawModels` 1 or 0: about +0.5 fps. `R_LightLimit=1`, `R_DistMLOD1=0.5`: no change.
   - Mark: no shadows looks fine, the world shadows look nicer.
+- CPU and texture cycle (same scene, 15 s phases, three rounds in the heavy part): `R_SkipAnimInterp=1`,
+  `R_SkipNodeFX=1`, `R_UseEVA=0`, `R_LightSort=4`, `TextureLOD=1`, `R_Anisotropy=0`: every phase 13.8 to 14.0 fps, the
+  game's own 13.8 to 13.9. None helps. TextureLOD is probably read only at texture load, so that one is untested in
+  effect.
 - The port menu (`src/los_menu.cpp`): - and + together on the Switch (the SDK's input driver sends F5), F5 on the PC.
   Presets Quality (full shadows, 1280x720), Balanced (world shadows, resolution by clock), Performance (no shadows,
   960x540); shadows full / world / off (`los_shadows`), handheld resolution auto / 540 / 720
