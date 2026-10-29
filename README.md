@@ -15,7 +15,7 @@ PC).
 | --- | --- |
 | Code translation (`rexglue codegen`) | Done: 59,682 functions |
 | PC build | Playable with the native renderer (Vulkan) and with the emulated GPU |
-| Switch build | Playable on the console: the first levels tested; 40-50 fps in light scenes, 17-25 in the heaviest |
+| Switch build | Playable on the console: the first levels tested. A port menu (- and + together) with Quality, Balanced and Performance presets. At stock clocks: 960x540 and 30 fps in light and medium scenes, 14-20 fps in the heaviest |
 | Disc 2 | Written (the disc swap switches to a `game_root_disc2` folder), not yet tested at the swap |
 | Known issues | Switch: one-time stutters the first time a shader is used (a precompiled shader file helps), slowdowns in heavy scenes |
 

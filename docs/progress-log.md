@@ -21,6 +21,9 @@ Newest first. Each entry: what was done, what was found, what is next.
   960x540); shadows full / world / off (`los_shadows`), handheld resolution auto / 540 / 720
   (`los_handheld_resolution`), frame cap auto / 30 / none (`los_fps_cap`). Applied at once; "Save and close" rewrites
   those three lines in los.toml (other lines kept; an older `sa2_render_height_handheld` line commented out).
+- Mark's console test of the menu: every preset applied live and each "Save and close" wrote los.toml. The text was
+  too small in handheld: now ImGui's default font at 26 px (twice its 13 px design) with double padding.
+- Release test2: the console's `deko3d_shaders.bin` (619 variants, a superset of the 600 sent on 2026-10-28) in the zip.
 - SDK: `ReXApp::AppOverlayOpen()` so the gamepad goes to an app's own menu as it does to the SDK's overlays, and
   `config_file_path()`.
 - `los_engine_vars.cpp`: the thread always runs; with no test key it keeps the menu's shadow setting, and restores the
