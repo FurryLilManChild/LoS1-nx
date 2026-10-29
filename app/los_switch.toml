@@ -7,7 +7,8 @@ sa2_vsync_relaxed = true
 input_xbox_layout = true
 
 # Handheld render resolution. Left out: 1280x720, or 960x540 when the console runs at its stock clocks (no
-# overclock; checked every 5 seconds, so changing a sys-clk profile while playing switches it). Set it to choose: 540 (960x540, faster) or 720 (1280x720, sharper).
+# overclock; checked every 5 seconds, so changing a sys-clk profile while playing switches it).
+# Set it to choose: 540 (960x540, faster) or 720 (1280x720, sharper).
 # sa2_render_height_handheld = 720
 
 # Frame rate cap in handheld mode: -1 = 30 fps when the console runs at its stock clocks (the default), 0 = no cap,
