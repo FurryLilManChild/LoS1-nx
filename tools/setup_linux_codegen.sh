@@ -29,7 +29,10 @@ cmake -S "$SDK" -B "$SDK/out/host" -G Ninja -DCMAKE_BUILD_TYPE=Release \
   -DREXGLUE_ENABLE_TRACY=OFF -DSDL_WAYLAND=OFF
 ninja -C "$SDK/out/host" rexglue
 
-REXGLUE="$SDK/out/linux-amd64/rexglue"
+# The SDK fork's own generator (the speed options of app/codegen_flavor.toml), built by the Linux app build
+# (out/linux: ninja rexglue); the upstream one below only as a fallback.
+REXGLUE="$REPO/sdk/out/linux-amd64/rexgluerd"
+[ -x "$REXGLUE" ] || REXGLUE="$SDK/out/linux-amd64/rexglue"
 cd "$REPO/app"
 mkdir -p "$REPO/out"
 if [ "${1:-}" = "--dump-image" ]; then
@@ -37,3 +40,5 @@ if [ "${1:-}" = "--dump-image" ]; then
 else
   "$REXGLUE" codegen los_manifest.toml | tee "$REPO/out/codegen.log"
 fi
+# sa2-nx's post-codegen steps (2026-10-31): guest memory without volatile, loop barriers (tools/post_codegen.py).
+python3 "$REPO/tools/post_codegen.py" "$REPO/app/generated/default"
