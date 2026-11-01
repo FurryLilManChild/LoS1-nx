@@ -2,6 +2,22 @@
 
 Newest first. Each entry: what was done, what was found, what is next.
 
+## 2026-10-31: codegen speed options, batch 1
+
+- Found while reading renut-nx (ChanseyIsTheBest's Banjo port): LoS1-nx (from mof-nx's tree) was generated with none of
+  sa2-nx's codegen speed options and none of its post-codegen steps, so every guest register lived in ctx memory. The
+  flat game-thread profile of 2026-10-28 was this.
+- Batch 1 (`app/codegen_flavor.toml`, included by the manifest): sa2-nx's set without non_argument_as_local. Generated
+  with the SDK fork's own generator (`sdk/out/linux-amd64/rexgluerd`), not upstream. sa2-nx's
+  `tools/read_before_write.py`: 46 reports, one real (0x824BF7BC, a shared tail reading the parent's r31:
+  share_registers in overrides.toml), the rest checked and left. NRO 68.3 -> 58.9 MB.
+- Mark's console, stock clocks (CPU 1020, GPU 460.8), 960x540, full shadows, 30 fps cap, standing after the lycans
+  (the same spot and settings as the 13.8-14.0 fps of 2026-10-29): **18.3-18.4 fps over 27 windows of 10 s**, the main
+  thread at 98 %. About +31 %. No errors; nothing different noticed.
+- Next: batch 2 (non_argument_as_local; sa2-nx `tools/non_argument_audit.py`: 67 EH funclets taking r12, a group of
+  about 26 vector functions passing v32-v61 between them, 44 r11 reads after calls to check), then the post-codegen
+  steps (pch_no_volatile with loop barriers first).
+
 ## 2026-10-29: shadow tests and the port menu
 
 - Mark's console cycles (stock clocks: CPU 1020 MHz, GPU 460.8 MHz, 960x540, 30 fps cap; the heavy scene after the
