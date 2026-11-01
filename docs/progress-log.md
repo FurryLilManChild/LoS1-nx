@@ -17,7 +17,12 @@ Newest first. Each entry: what was done, what was found, what is next.
 - Post-codegen steps from sa2-nx (`tools/post_codegen.py`: pch_no_volatile, loop_barriers; 26,566 barriers):
   find_self_loops 0 in recompiled functions, NRO 53.8 MB. Console, same spot and settings: **20.5-20.7 fps** over 16
   windows (batch 1: 18.4), main thread 98 %, no errors. 14 -> 20.6 fps (+47 %) for the two steps together.
-- Next: batch 2 (non_argument_as_local; sa2-nx `tools/non_argument_audit.py`: 67 EH funclets taking r12, a group of
+- Batch 2 built (2026-11-01, `los_codegen_b2.elf`): non_argument_as_local with a keep list of 94 functions (67 r12
+  funclets, 22 vector functions, the r11 producers). The --with-option audit leaves 4 hand-over reports, all r11 saved
+  into a setjmp buffer by the generator (dead after a longjmp). NRO 51.7 MB. find_self_loops: one new self-branch,
+  sub_8287F398 (`cbz w25, .`): the guest loop itself never ends when its count r28 is 0 (no memory read on that path,
+  so not a hoisted load; the registers as locals only made it visible). Waiting for the console run.
+- Then: batch 2 (non_argument_as_local; sa2-nx `tools/non_argument_audit.py`: 67 EH funclets taking r12, a group of
   about 26 vector functions passing v32-v61 between them, 44 r11 reads after calls to check), then the post-codegen
   steps (pch_no_volatile with loop barriers first).
 
