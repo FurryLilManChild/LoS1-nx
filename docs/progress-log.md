@@ -14,6 +14,9 @@ Newest first. Each entry: what was done, what was found, what is next.
 - Mark's console, stock clocks (CPU 1020, GPU 460.8), 960x540, full shadows, 30 fps cap, standing after the lycans
   (the same spot and settings as the 13.8-14.0 fps of 2026-10-29): **18.3-18.4 fps over 27 windows of 10 s**, the main
   thread at 98 %. About +31 %. No errors; nothing different noticed.
+- Post-codegen steps from sa2-nx (`tools/post_codegen.py`: pch_no_volatile, loop_barriers; 26,566 barriers):
+  find_self_loops 0 in recompiled functions, NRO 53.8 MB. Console, same spot and settings: **20.5-20.7 fps** over 16
+  windows (batch 1: 18.4), main thread 98 %, no errors. 14 -> 20.6 fps (+47 %) for the two steps together.
 - Next: batch 2 (non_argument_as_local; sa2-nx `tools/non_argument_audit.py`: 67 EH funclets taking r12, a group of
   about 26 vector functions passing v32-v61 between them, 44 r11 reads after calls to check), then the post-codegen
   steps (pch_no_volatile with loop barriers first).
