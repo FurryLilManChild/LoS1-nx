@@ -17,6 +17,6 @@ game_root = "../assets/game_root"
 file_path = "../assets/game_root/default.xex"
 out_directory_path = "generated/default"
 # overrides.toml: written by hand, code the automatic function discovery misses, each entry with its evidence.
-includes = ["overrides.toml"]
+includes = ["overrides.toml", "codegen_flavor.toml"]
 
 # No [[modules]]: the disc has a single executable and no guest DLLs.

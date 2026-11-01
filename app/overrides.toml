@@ -33,7 +33,14 @@ longjmp_address = 0x826F0CD0
 "0x8240E560" = { }  # 4 instructions, pointer at 0x8205AE20 (+1 more)
 "0x82416068" = { }  # 3 instructions, pointer at 0x8205BC04
 "0x8244E858" = { }  # 5 instructions, pointer at 0x8206615C (+1 more)
-"0x824BF7BC" = { }  # 4 instructions, pointer at 0x821396A0
+"0x824BF7BC" = { share_registers = true }  # 4 instructions, pointer at 0x821396A0. Also a shared tail its parents
+# branch into (beq / bne cr6 0x824BF7BC) that reads the parent's r31: share_registers (needed with
+# non_volatile_as_local, codegen_flavor.toml; a no-op without it). Found by sa2-nx's tools/read_before_write.py on the
+# 2026-10-31 codegen. Its other 45 reports were checked and left: self-cancelling forms (xor r30,r30; subfe of a
+# register with itself), compares that write cr6, the generator's setjmp register saves, a software-pipelined vector
+# loop (sub_828C7248: v120 / v121 / v125 of the first pass are not used), a 1-instruction stub with no callers
+# (sub_826FEAB4), and reads on paths where the original code also reads a caller's leftover value (MSVC never relies
+# on one, so those paths are not taken).
 "0x825BCB60" = { }  # 2 instructions, pointer at 0x8208B628
 "0x825BCB68" = { }  # 2 instructions, pointer at 0x8208B624
 "0x825BCC78" = { }  # 2 instructions, pointer at 0x8208B6B0

@@ -1,0 +1,30 @@
+# Code generation options for speed (2026-10-31), the set sa2-nx ships in app/codegen_flavor.toml (its "optimised"
+# flavour, from masseffect-nx, sasrt-nx and banjo-nx's measured rounds; sa2-nx docs/cpu-rounds.md, banjo-nx
+# docs/codegen-enhancements.md). Until now LoS1-nx was generated with none of them (the generator's plain output, as
+# mof-nx), so every guest register lived in memory (ctx.*). They change only how the C++ is written; the guest-visible
+# result is the same. Root keys: they must stay outside any table (los_manifest.toml includes this file).
+#
+# Batch 1 (2026-10-31): everything in sa2-nx's set except non_argument_as_local (r0, r2, r11, r12, f0, v32-v63 as
+# locals), which needs the whole-program audit (sa2-nx tools/non_argument_audit.py) and its keep list first.
+# non_volatile_as_local needs every function that reads one of r14-r31, f14-f31, v14-v31, v64-v127, cr, ctr, xer
+# before writing it marked share_registers (sa2-nx tools/read_before_write.py, run on the generated code): see the
+# [functions] marks in overrides.toml.
+cr_as_local = true
+ctr_as_local = true
+xer_as_local = true
+reserved_as_local = true
+skip_msr = true
+dform_disp_split = true
+fctiwz_inline = true
+fcti_inline = true
+non_volatile_as_local = true
+elide_lr_stores = true
+fp_moves_modeless = true
+fp_compares_modeless = true
+fp_mode_lookahead = true
+fp_mode_lookahead_past_branch = false
+fp_copy_pairs = true
+fp_copy_forwarding = true
+div_inline = true
+rotate_word_shifts = true
+dcbt_prefetch = true
