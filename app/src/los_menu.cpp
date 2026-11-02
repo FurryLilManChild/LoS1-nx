@@ -7,7 +7,9 @@
 //
 // The settings:
 //   los_shadows              full (the game's own) / world (R_ShadowMapsMask=1: the world casts shadows, not the
-//                            characters; +9 % in the heavy test scene) / off (R_ShadowMaps=0: +35 %)
+//                            characters; +9 % in the heavy test scene) / characters (R_ShadowMapsMask=2: the
+//                            characters cast shadows, not the world; Mark's request, 2026-11-01) / off
+//                            (R_ShadowMaps=0: +35 %)
 //   los_handheld_resolution  auto / 540 / 720 (los_stock_clocks.cpp)
 //   los_fps_cap              -1 auto / 0 none / 30 (los_stock_clocks.cpp)
 // Presets: Quality = full shadows, 1280x720; Balanced = world shadows, auto; Performance = no shadows, 960x540.
@@ -29,9 +31,10 @@
 #include <rex/ui/keybinds.h>
 
 REXCVAR_DEFINE_STRING(los_shadows, "full", "LoS1",
-                      "Shadows: full (the game's own), world (the world casts shadows, the characters do not; "
-                      "faster), off (fastest). Changed from the port menu (- and + together)")
-    .allowed({"full", "world", "off"});
+                      "Shadows: full (the game's own), world (the world casts shadows, the characters do not), "
+                      "characters (the characters cast shadows, the world does not), off (fastest). Changed from the "
+                      "port menu (- and + together)")
+    .allowed({"full", "world", "characters", "off"});
 
 namespace los {
 void ApplyOptionsNow();                            // los_stock_clocks.cpp
@@ -42,6 +45,7 @@ namespace {
 
 const char* SpecForShadows(const std::string& v) {
   if (v == "world") return "R_ShadowMapsMask=1";
+  if (v == "characters") return "R_ShadowMapsMask=2";  // the game's default mask is 3: bit 1 the world, bit 2 the rest
   if (v == "off") return "R_ShadowMaps=0";
   return "";  // full: the game's own values
 }
@@ -220,6 +224,8 @@ class LosMenuDialog final : public rex::ui::ImGuiDialog {
     if (ImGui::RadioButton("Full##sh", shadows == "full")) SetShadows("full");
     ImGui::SameLine();
     if (ImGui::RadioButton("World only##sh", shadows == "world")) SetShadows("world");
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Characters only##sh", shadows == "characters")) SetShadows("characters");
     ImGui::SameLine();
     if (ImGui::RadioButton("Off##sh", shadows == "off")) SetShadows("off");
 

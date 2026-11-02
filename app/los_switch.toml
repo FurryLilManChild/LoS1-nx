@@ -8,7 +8,8 @@ input_xbox_layout = true
 
 # The port menu (- and + together) sets the three keys below and saves them here.
 
-# Shadows: "full" (the game's own), "world" (the world casts shadows, characters do not; faster), "off" (fastest).
+# Shadows: "full" (the game's own), "world" (only the world casts shadows), "characters" (only the characters do),
+# "off" (fastest).
 los_shadows = "full"
 
 # Handheld render resolution: "auto" (960x540 when the console runs at its stock clocks, 1280x720 when overclocked;
