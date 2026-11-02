@@ -61,3 +61,4 @@ __pycache__/
 # Renut's third-party code, fetched from sa2-nx by tools/fetch_renut_deps.py
 /app/thirdparty/
 app/generated_*/
+pgo/

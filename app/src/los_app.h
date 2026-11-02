@@ -21,6 +21,7 @@
 #include <rex/runtime.h>
 
 #include "cpu/sa2_enhancements.h"
+#include "los_pgo.h"
 #include "me/sa2_render_mode.h"
 
 #if LOS_RENUT_RENDERER
@@ -164,9 +165,17 @@ class LosApp : public rex::ReXApp {
     sa2::enh::StartReport();
     // PC: the key that simulates docking / undocking (render resolution; bind_sa2_docked = F9).
     sa2::render::RegisterKeys();
+    // The PGO-instrumented build (LOS_PGO=generate) saves its counts to pgo/ every 2 minutes (nothing otherwise).
+    los::pgo::Start();
+  }
+
+  // The PGO-instrumented build saves its counts when the game loses focus (HOME menu): it may be closed from there.
+  void OnWindowFocusChanged(bool focused) override {
+    if (!focused) los::pgo::DumpNow();
   }
 
   void OnShutdown() override {
+    los::pgo::Stop();
 #if LOS_RENUT_RENDERER
     if (banjo::renut_gpu::Active()) renut::gpu::ShutdownRenderer();
 #endif

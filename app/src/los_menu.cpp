@@ -18,6 +18,8 @@
 // The frame cap stays the player's choice (auto in all three).
 #include <algorithm>
 #include <atomic>
+#include <chrono>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
@@ -37,8 +39,12 @@ REXCVAR_DEFINE_STRING(los_shadows, "full", "LoS1",
                       "characters (the characters cast shadows, the world does not), off (fastest). Changed from the "
                       "port menu (- and + together)")
     .allowed({"full", "world", "characters", "off"});
+REXCVAR_DEFINE_BOOL(los_show_fps, false, "LoS1",
+                    "A frame rate counter in the top-left corner (the game's frames a second, counted from its Swaps). "
+                    "Changed from the port menu (- and + together)");
 
 namespace los {
+uint32_t SwapCount();                              // los_engine_vars.cpp: every Swap since the start
 void ApplyOptionsNow();                            // los_stock_clocks.cpp
 std::string ClockStatus();                         // los_stock_clocks.cpp
 void SetMenuEngineVars(const std::string& spec);  // los_engine_vars.cpp
@@ -120,6 +126,7 @@ bool SaveToConfig(std::string* error) {
       {"los_shadows", "\"" + REXCVAR_GET(los_shadows) + "\""},
       {"los_handheld_resolution", "\"" + rex::cvar::GetFlagByName("los_handheld_resolution") + "\""},
       {"los_fps_cap", rex::cvar::GetFlagByName("los_fps_cap")},
+      {"los_show_fps", REXCVAR_GET(los_show_fps) ? "true" : "false"},
   };
   for (std::string& line : lines) {
     const std::string key = KeyOf(line);
@@ -166,6 +173,61 @@ void Label(const char* text) {
   ImGui::SameLine(170 * kScale);
 }
 
+// The frame rate counter (2026-11-01, Mark's request): the game's frames a second over the last half second, from its
+// Swaps (los_engine_vars.cpp counts them), in the top-left corner. A window that takes no input and no navigation, so
+// the game keeps the gamepad (GameReceivesGamepad). The UI thread draws it at the display's rate while it exists.
+class LosFpsDialog final : public rex::ui::ImGuiDialog {
+ public:
+  explicit LosFpsDialog(rex::ui::ImGuiDrawer* drawer) : ImGuiDialog(drawer) {}
+  void RequestClose() { Close(); }
+
+ protected:
+  void OnDraw(ImGuiIO& io) override {
+    (void)io;
+    const auto now = std::chrono::steady_clock::now();
+    const uint32_t swaps = SwapCount();
+    const double dt = std::chrono::duration<double>(now - last_time_).count();
+    if (dt >= 0.5) {
+      fps_ = first_ ? 0.0 : double(swaps - last_swaps_) / dt;
+      first_ = false;
+      last_swaps_ = swaps;
+      last_time_ = now;
+    }
+    ImGui::SetNextWindowPos(ImVec2(8, 8), ImGuiCond_Always);
+    ImGui::SetNextWindowBgAlpha(0.55f);
+    if (ImGui::Begin("##los_fps", nullptr,
+                     ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoNav |
+                         ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_AlwaysAutoResize |
+                         ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus)) {
+      if (g_font) ImGui::PushFont(g_font, g_font->LegacySize);
+      if (first_) {
+        ImGui::TextUnformatted("-- fps");
+      } else {
+        ImGui::Text("%.1f fps", fps_);
+      }
+      if (g_font) ImGui::PopFont();
+    }
+    ImGui::End();
+  }
+
+ private:
+  std::chrono::steady_clock::time_point last_time_ = std::chrono::steady_clock::now();
+  uint32_t last_swaps_ = 0;
+  double fps_ = 0.0;
+  bool first_ = true;
+};
+
+LosFpsDialog* g_fps = nullptr;  // the UI thread's only
+
+void ShowFps(rex::ui::ImGuiDrawer* drawer, bool on) {
+  if (on && !g_fps) {
+    g_fps = new LosFpsDialog(drawer);
+  } else if (!on && g_fps) {
+    g_fps->RequestClose();  // deletes itself after its next Draw
+    g_fps = nullptr;
+  }
+}
+
 class LosMenuDialog final : public rex::ui::ImGuiDialog {
  public:
   explicit LosMenuDialog(rex::ui::ImGuiDrawer* drawer) : ImGuiDialog(drawer) { g_open = true; }
@@ -173,6 +235,10 @@ class LosMenuDialog final : public rex::ui::ImGuiDialog {
 
  protected:
   void OnClose() override;
+  void SetShowFps(bool on) {
+    rex::cvar::SetFlagByName("los_show_fps", on ? "true" : "false");
+    ShowFps(imgui_drawer(), on);
+  }
 
   void OnDraw(ImGuiIO& io) override {
     // Large on purpose (Mark, 2026-10-29: the first build's text was hard to read in handheld): the text at
@@ -246,6 +312,12 @@ class LosMenuDialog final : public rex::ui::ImGuiDialog {
     ImGui::SameLine();
     if (ImGui::RadioButton("None##cap", cap == 0)) SetCap(0);
     ImGui::TextDisabled("Handheld. Auto: 30 fps at the stock CPU clock, none overclocked");
+
+    const bool show_fps = REXCVAR_GET(los_show_fps);
+    Label("FPS counter");
+    if (ImGui::RadioButton("On##fps", show_fps)) SetShowFps(true);
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Off##fps", !show_fps)) SetShowFps(false);
     ImGui::Separator();
 
     ImGui::TextWrapped("%s", ClockStatus().c_str());
@@ -305,6 +377,7 @@ void AddMenuFont(ImFontAtlas* atlas) {
 // From LosApp::OnCreateDialogs: - and + together (Switch) or F5 (PC) opens and closes the menu.
 void RegisterMenu(rex::ui::ImGuiDrawer* drawer, const std::filesystem::path& config_path) {
   g_config_path = config_path;
+  if (REXCVAR_GET(los_show_fps)) ShowFps(drawer, true);
   rex::ui::RegisterBind("bind_los_menu", "F5", "Toggle the port menu (- and + on the Switch)", [drawer] {
     if (g_menu) {
       g_menu->RequestClose();

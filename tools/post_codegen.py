@@ -31,7 +31,11 @@ Left out (they need game-specific lists or runtime support LoS1 does not have ye
 indirect call sites), frame_traffic (marks only), the banjo-nx round (leaf_dead_stores, dead_ctx_defs, single_floats,
 fp_sign_ops, lr_preserve, flush_hoist, ro_constants_cfg, inline_memcalls, vec_unaligned_stores), store_cards.
 
-  python tools/post_codegen.py [app/generated/default] [--round1]
+  python tools/post_codegen.py [app/generated/default] [--round2]
+
+Round 2 is OFF by default (2026-11-01): Mark's console run of the build with it (los_cleanup2.elf, same spot and
+settings) gave 21.8-21.9 fps against 22.0-22.2 without it: about 1 % slower, so the default is round 1 only. Which of
+its steps cost the time was not measured (the inline copies are the likeliest: more code for the A57's caches).
 """
 import os
 import subprocess
@@ -54,7 +58,7 @@ def run(name, *a):
 
 run('pch_no_volatile.py', pch)
 run('loop_barriers.py', folder)
-if '--round1' not in sys.argv:
+if '--round2' in sys.argv:
     if not os.path.isfile(image):
         sys.exit('post_codegen: out/default_image.bin is missing: run the code generator with '
                  'REXGLUE_DUMP_IMAGE=out/default_image.bin once')

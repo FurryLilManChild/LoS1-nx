@@ -336,6 +336,11 @@ void SetMenuEngineVars(const std::string& spec) {
   g_menu_spec = spec;
 }
 
+// Every Swap since the start (the port menu's frame rate counter, los_menu.cpp).
+uint32_t SwapCount() {
+  return g_swaps.load(std::memory_order_relaxed);
+}
+
 void StartEngineVars() {
   new std::thread(Run);  // runs for the session (never joined: the process ends with it)
 }

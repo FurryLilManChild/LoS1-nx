@@ -29,6 +29,8 @@ set(LOS_SOURCES
     src/cpu/sa2_enhancements.cpp
     src/cpu/sa2_gpu_boost.cpp
     src/cpu/los_codegen_checks.cpp
+    # PGO profile collection (the Switch build with LOS_PGO=generate; empty otherwise).
+    src/los_pgo.cpp
     src/me/sa2_render_mode.cpp
     # The Switch at its stock clocks (2026-10-28): 960x540 handheld at the stock CPU clock.
     src/los_stock_clocks.cpp
@@ -110,6 +112,45 @@ if(REXGLUE_PLATFORM_SWITCH)
     target_include_directories(los PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/builtin_config")
     target_compile_definitions(los PRIVATE LOS_BUILTIN_CONFIG=1)
     # The homebrew menu's entry (no icon of our own yet: libnx's default).
+    # Profile-guided optimisation (2026-11-01, from sa2-nx's app/CMakeLists.txt, docs: its "Link-time optimisation of a
+    # recompiled program" and renut-nx's docs/pgo-lto.md):
+    #   LOS_PGO=generate  an instrumented NRO that writes its branch counts to pgo/ next to the NRO (src/los_pgo.cpp;
+    #                     registered in a section, not by constructors: libgcov's exit-time files do not fit the
+    #                     Switch). Value profiling is off: its shared lists are not safe without atomic updates.
+    #   LOS_PGO=use       the counts merged by tools/pgo_merge.sh (gcov-tool merge-stream, then sa2-nx's
+    #                     tools/pgo_summary.py). Code the sessions did not run is compiled as without a profile
+    #                     (-fprofile-partial-training); functions changed since keep none (-Wno-coverage-mismatch).
+    #                     The game code also gets sa2-nx's inliner limits for a profile (max-inline-insns-auto 64,
+    #                     inline-unit-growth 12: its "the link" round).
+    # Both builds must be made in the same build folder (out/nx): the .gcda names are the objects' full paths.
+    set(LOS_PGO "" CACHE STRING "Profile-guided optimisation of the Switch build: empty, generate or use")
+    set(LOS_PGO_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../pgo" CACHE PATH "Folder of the PGO profile (.gcda files)")
+    get_filename_component(_los_pgo_dir "${LOS_PGO_DIR}" ABSOLUTE)
+    if(LOS_PGO STREQUAL "generate")
+        set(_los_pgo "-fprofile-generate=${_los_pgo_dir}" -fno-profile-values -fprofile-update=single
+                     -fprofile-info-section=gcov_info)
+        target_compile_definitions(los PRIVATE LOS_PGO_GENERATE=1)
+    elseif(LOS_PGO STREQUAL "use")
+        if(NOT EXISTS "${LOS_PGO_DIR}")
+            message(FATAL_ERROR "LOS_PGO=use: no profile in ${LOS_PGO_DIR}")
+        endif()
+        set(_los_pgo "-fprofile-use=${_los_pgo_dir}" -fprofile-correction -fno-profile-values
+                     -fprofile-partial-training -Wno-missing-profile -Wno-coverage-mismatch)
+        if(TARGET los_recomp)
+            target_compile_options(los_recomp PRIVATE --param=max-inline-insns-auto=64 --param=inline-unit-growth=12)
+        endif()
+    elseif(LOS_PGO)
+        message(FATAL_ERROR "LOS_PGO must be empty, generate or use (got ${LOS_PGO})")
+    endif()
+    if(LOS_PGO)
+        foreach(target los_recomp los los_renut_gpu plume)
+            if(TARGET ${target})
+                target_compile_options(${target} PRIVATE ${_los_pgo})
+            endif()
+        endforeach()
+        target_link_options(los PRIVATE ${_los_pgo})
+        message(STATUS "los: PGO ${LOS_PGO} (${_los_pgo_dir})")
+    endif()
     rexglue_switch_add_nro(los
         NAME "Castlevania: Lords of Shadow"
         AUTHOR "LoS1-nx"
