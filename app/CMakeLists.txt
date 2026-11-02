@@ -28,6 +28,7 @@ set(LOS_SOURCES
     # From sa2-nx, used by Renut's renderer: the enhancement switches and the console's render mode.
     src/cpu/sa2_enhancements.cpp
     src/cpu/sa2_gpu_boost.cpp
+    src/cpu/los_codegen_checks.cpp
     src/me/sa2_render_mode.cpp
     # The Switch at its stock clocks (2026-10-28): 960x540 handheld at the stock CPU clock.
     src/los_stock_clocks.cpp

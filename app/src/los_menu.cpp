@@ -12,7 +12,9 @@
 //                            (R_ShadowMaps=0: +35 %)
 //   los_handheld_resolution  auto / 540 / 720 (los_stock_clocks.cpp)
 //   los_fps_cap              -1 auto / 0 none / 30 (los_stock_clocks.cpp)
-// Presets: Quality = full shadows, 1280x720; Balanced = world shadows, auto; Performance = no shadows, 960x540.
+// Presets: Quality = full shadows, 1280x720; Balanced = character shadows only, auto; Performance = no shadows,
+// 960x540. Balanced was world shadows only until 2026-11-01: Mark's shadow-mode test (heavy spot, stock clocks) gave
+// full 21.8 fps, world only 23.4, characters only 28.6, off 28.4: the world's shadows are the cost.
 // The frame cap stays the player's choice (auto in all three).
 #include <algorithm>
 #include <atomic>
@@ -58,7 +60,7 @@ struct Preset {
 };
 constexpr Preset kPresets[] = {
     {"Quality", "full", "720", "All shadows, 1280x720 in handheld"},
-    {"Balanced", "world", "auto", "World shadows only, resolution by clock"},
+    {"Balanced", "characters", "auto", "Character shadows only, resolution by clock"},
     {"Performance", "off", "540", "No shadows, 960x540 in handheld"},
 };
 
