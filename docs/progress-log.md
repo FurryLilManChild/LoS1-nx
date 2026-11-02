@@ -21,7 +21,9 @@ Newest first. Each entry: what was done, what was found, what is next.
   funclets, 22 vector functions, the r11 producers). The --with-option audit leaves 4 hand-over reports, all r11 saved
   into a setjmp buffer by the generator (dead after a longjmp). NRO 51.7 MB. find_self_loops: one new self-branch,
   sub_8287F398 (`cbz w25, .`): the guest loop itself never ends when its count r28 is 0 (no memory read on that path,
-  so not a hoisted load; the registers as locals only made it visible). Waiting for the console run.
+  so not a hoisted load; the registers as locals only made it visible). Console, same spot and settings: **22.0-22.2
+  fps** over 11 windows (cleanup: 20.6), the fight after the load 16.6-18.7 (cleanup: 14.4-14.6), main thread 98 %,
+  no errors. Tonight's three steps together: 14.0 -> 22.2 fps (+59 %).
 - Then: batch 2 (non_argument_as_local; sa2-nx `tools/non_argument_audit.py`: 67 EH funclets taking r12, a group of
   about 26 vector functions passing v32-v61 between them, 44 r11 reads after calls to check), then the post-codegen
   steps (pch_no_volatile with loop barriers first).
