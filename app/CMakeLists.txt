@@ -154,5 +154,5 @@ if(REXGLUE_PLATFORM_SWITCH)
     rexglue_switch_add_nro(los
         NAME "Castlevania: Lords of Shadow"
         AUTHOR "LoS1-nx"
-        VERSION "0.1.0")
+        VERSION "0.5.0")
 endif()
