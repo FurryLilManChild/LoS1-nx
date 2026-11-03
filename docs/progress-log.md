@@ -2,6 +2,16 @@
 
 Newest first. Each entry: what was done, what was found, what is next.
 
+## 2026-11-03: version 0.5.0
+
+- Release 0.5.0 (`out/nx/elf/los_0.5.0.elf`): the codegen of batch 2 with round 1 of the post-codegen steps (round 2
+  measured 1 % slower and stays off), the port menu's characters-only shadows (R_ShadowMapsMask=2), Balanced = character
+  shadows only, the FPS counter, NRO version 0.5.0, the console's deko3d_shaders.bin of 2026-10-29 (619 variants).
+- Shadow modes (console, heavy spot, stock clocks, 960x540): full 21.8, world only 23.4, characters only 28.6, off
+  28.4 fps. The world's shadows are the cost.
+- PGO: the instrumented build is made (`los_pgo_generate.elf`, `C:\LoS1-nx\out\nx\los_pgo_record`); waiting for
+  Mark's recording session. tools/pgo_merge.sh merges its streams with devkitA64's gcov-tool under Wine.
+
 ## 2026-10-31: codegen speed options, batch 1
 
 - Found while reading renut-nx (ChanseyIsTheBest's Banjo port): LoS1-nx (from mof-nx's tree) was generated with none of
