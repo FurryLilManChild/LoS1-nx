@@ -14,6 +14,10 @@
 #include <rex/cvar.h>
 
 #include <plume_vulkan.h>
+#if defined(__APPLE__)
+#include <dlfcn.h>
+#include "vulkan_moltenvk.h"
+#endif
 #if defined(_WIN32)
 #include <plume_d3d12.h>
 #endif
@@ -286,6 +290,26 @@ plume::RenderShaderFormat HostShaderFormat() {
 }
 
 std::unique_ptr<plume::RenderInterface> CreateRenderInterface() {
+#if defined(__APPLE__)
+  // Renut bypasses the SDK's VulkanInstance. Use its same bundle/SDK discovery
+  // and preload the loader, which lets plume's volk open it by its basename.
+  const auto paths = rex::ui::vulkan::DetectMacOSVulkanRuntimePaths();
+  rex::ui::vulkan::ConfigureMacOSVulkanEnvironment(paths);
+  static void *loader = nullptr;  // Retained while plume's Vulkan functions live.
+  if (!loader) {
+    for (const auto &candidate : paths.loader_candidates) {
+      loader = dlopen(candidate.c_str(), RTLD_NOW | RTLD_LOCAL);
+      if (loader) {
+        RGPU_INFO("Vulkan loader: {}", candidate.string());
+        break;
+      }
+    }
+    if (!loader) {
+      RGPU_ERROR("No loadable Vulkan runtime; package the vulkan directory beside los");
+      return nullptr;
+    }
+  }
+#endif
 #if defined(PLUME_DEKO3D)
   if (IsDeko3D()) {
     // banjo-nx: the DKSH cache (variants compiled before, on the PC or by this console) before the device exists.

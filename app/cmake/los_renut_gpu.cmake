@@ -17,7 +17,8 @@ set(RENUT_ASSETS_DIR "${CMAKE_SOURCE_DIR}/../assets/game_root" CACHE PATH "Game 
 # the compiler paths (tools/renut_gpu_import.py adds the variable to gpu.cmake). On the PC, clang for the MSVC ABI.
 set(BANJO_RENUT_XENOS_RECOMP_ARGS "")
 foreach(_banjo_var CMAKE_C_COMPILER_TARGET CMAKE_CXX_COMPILER_TARGET CMAKE_LINKER_TYPE CMAKE_C_FLAGS CMAKE_CXX_FLAGS
-                   CMAKE_AR CMAKE_RC_COMPILER CMAKE_MT)
+                   CMAKE_AR CMAKE_RC_COMPILER CMAKE_MT CMAKE_OSX_ARCHITECTURES CMAKE_OSX_DEPLOYMENT_TARGET
+                   CMAKE_POLICY_VERSION_MINIMUM)
     if(DEFINED ${_banjo_var} AND NOT "${${_banjo_var}}" STREQUAL "")
         list(APPEND BANJO_RENUT_XENOS_RECOMP_ARGS "-D${_banjo_var}=${${_banjo_var}}")
     endif()
@@ -114,6 +115,9 @@ target_include_directories(los_renut_gpu PRIVATE
     # banjo_renut_tuning.cpp: the Switch thread helpers (threading_switch.h, through src/me/me_platform_compat.h).
     "${REXSDK_DIR}/src/core")
 target_link_libraries(los_renut_gpu PRIVATE rex::runtime)
+if(APPLE)
+    target_include_directories(los_renut_gpu PRIVATE "${REXSDK_DIR}/src/ui/vulkan")
+endif()
 if(REXGLUE_PLATFORM_SWITCH)
     # banjo-nx (2026-10-17): the deko3d back end's glue and the game shaders' GLSL package (docs/deko3d-renderer.md).
     target_sources(los_renut_gpu PRIVATE "${CMAKE_SOURCE_DIR}/src/renut_engine/gpu/banjo_renut_deko3d.cpp")

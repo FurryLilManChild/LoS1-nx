@@ -2,6 +2,44 @@
 
 Newest first. Each entry: what was done, what was found, what is next.
 
+## 2026-11-07: Apple Silicon macOS support
+
+- Added an ARM64 macOS build using Apple Clang, app packaging and launch
+  scripts, macOS defaults, a Disc 2 importer, and `docs/macos-build.md`.
+  The app references the local game assets and bundles its runtime libraries.
+- Adapted the existing Renut renderer to the SDL Cocoa window and Metal layer,
+  reused the SDK's Vulkan runtime discovery for plume, linked Apple frameworks,
+  and selected the pinned macOS DXC binary. Rendering uses Vulkan/MoltenVK;
+  this does not introduce a new renderer or a direct Metal backend.
+- Fixed the shader dump script path and completion check, and the SDK's
+  MoltenVK ICD staging path when embedded in the game project. The generated
+  registration-only unit uses O0 without its optimized PCH or GlobalISel to
+  avoid Apple Clang spending minutes compiling it. Gameplay stays optimized.
+- Local validation: Apple M2, 16 GB, macOS 15.6, Apple Clang 17, MoltenVK 1.4.1.
+  Built an ARM64 executable, translated 59,494 game functions, and compiled a
+  shader cache from 1,634 pixel and 372 vertex shader containers.
+- Matched opening village tutorial scene, fullscreen at 1280x720 internal
+  resolution with full shadows: Renut's four 10-second windows measured 59.76,
+  58.76, 59.75, and 59.99 FPS (mean 59.57). Xenos measured 8.14, 8.16, 8.18,
+  and 8.18 FPS (mean 8.17), approximately 7.3x slower in this scene.
+  Added opt-in wall-clock throughput reporting under `present_painted_profile`
+  to compare the Xenos renderer. Alternate FIFO and FSI experiments were
+  rejected; neither improved it, and FSI produced visual corruption.
+- Opening combat, movement, direct/area attacks, jumping, pause/resume, and
+  save creation were verified. Three active-combat windows measured 51.59,
+  53.39, and 59.17 FPS. These are window averages, not minimum frame rates.
+  The macOS build helper and configuration now select Renut by default.
+- The importer checks the ISO's root Disc.2 marker and title because both
+  discs share an XEX with a Disc 1 header. Disc 1 rejection was verified.
+- Contribution checks passed: incremental macOS build, shell/Python syntax,
+  configuration parsing, importer rejection of Disc 1 and unfinished downloads,
+  and packaging to a temporary app. Packaged libraries match the build outputs,
+  game data stays in external symlinks, and repackaging preserves user settings.
+- Remaining validation: full campaign, later effects, Disc 2 import and swap,
+  controller input, older macOS versions, and Windows/Linux/Switch builds.
+  First-use pipeline compilation can still hitch. No game data, translated
+  game sources, shader caches, or binaries are included in the contribution.
+
 ## 2026-11-03: version 0.5.0
 
 - Release 0.5.0 (`out/nx/elf/los_0.5.0.elf`): the codegen of batch 2 with round 1 of the post-codegen steps (round 2

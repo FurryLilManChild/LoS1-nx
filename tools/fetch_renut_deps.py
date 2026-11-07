@@ -27,6 +27,7 @@ PARTS = ['plume', 'reblue-XenosRecomp', 'uam', 'imgui']
 DXC_UPSTREAM = 'https://github.com/renderbag/dxc-bin.git'
 DXC_COMMIT = '12395e36295f950361ca842d8cc461492412facc'
 DXC_FILES = {
+    'darwin': ['bin/arm64/dxc-macos', 'lib/arm64/libdxcompiler.dylib'],
     'win32': ['bin/x64/dxc.exe', 'bin/x64/dxcompiler.dll', 'bin/x64/dxil.dll', 'lib/x64/dxcompiler.lib'],
     'linux': ['bin/x64/dxc-linux', 'lib/x64/libdxcompiler.so', 'lib/x64/libdxil.so'],
 }

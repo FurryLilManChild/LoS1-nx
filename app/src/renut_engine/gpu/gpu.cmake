@@ -23,7 +23,7 @@ set(RENUT_SHADER_CAPTURE_DIR "${CMAKE_BINARY_DIR}/shader_capture" CACHE PATH
 
 # tools/dump_shaders.py, which runs when there are no dumped shaders yet
 # (renut_xenos_shader_cache), needs Python 3 with the xxhash module.
-if(NOT EXISTS "${RENUT_SHADER_DUMP_DIR}")
+if(NOT EXISTS "${RENUT_SHADER_DUMP_DIR}/manifest.csv")
     find_package(Python3 REQUIRED COMPONENTS Interpreter)
     execute_process(COMMAND "${Python3_EXECUTABLE}" -c "import xxhash"
                     RESULT_VARIABLE renut_xxhash_missing OUTPUT_QUIET ERROR_QUIET)
@@ -36,6 +36,9 @@ endif()
 # plume is read-only and vendored; build it as-is.
 if(NOT TARGET plume)
     add_subdirectory("${CMAKE_SOURCE_DIR}/thirdparty/plume" "${CMAKE_BINARY_DIR}/plume")
+endif()
+if(APPLE)
+    target_link_libraries(plume PUBLIC "-framework Metal" "-framework QuartzCore" "-framework AppKit")
 endif()
 
 # The shader cache is zstd-compressed and its SPIR-V is smol-v encoded. Only the
@@ -63,11 +66,14 @@ target_include_directories(renut_smolv PUBLIC "${RENUT_SMOLV_DIR}")
 set_target_properties(renut_smolv PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # ---------------------------------------------------------------------------
-# DXC: the copy vendored with XenosRecomp covers Windows and Linux.
+# DXC: the copy fetched with XenosRecomp covers Windows, Linux and Apple Silicon.
 # ---------------------------------------------------------------------------
 set(RENUT_DXC_BIN_DIR "${RENUT_XENOS_RECOMP_DIR}/thirdparty/dxc-bin/bin/x64")
 if(CMAKE_HOST_WIN32)
     set(RENUT_DXC "${RENUT_DXC_BIN_DIR}/dxc.exe")
+elseif(CMAKE_HOST_APPLE)
+    set(RENUT_DXC_BIN_DIR "${RENUT_XENOS_RECOMP_DIR}/thirdparty/dxc-bin/bin/arm64")
+    set(RENUT_DXC env "DYLD_LIBRARY_PATH=${RENUT_XENOS_RECOMP_DIR}/thirdparty/dxc-bin/lib/arm64" "${RENUT_DXC_BIN_DIR}/dxc-macos")
 else()
     # The Linux binary finds libdxcompiler next to it.
     set(RENUT_DXC env "LD_LIBRARY_PATH=${RENUT_XENOS_RECOMP_DIR}/thirdparty/dxc-bin/lib/x64" "${RENUT_DXC_BIN_DIR}/dxc-linux")
@@ -76,6 +82,12 @@ endif()
 # Linux host a script that sets the library path, as RENUT_DXC does.
 if(CMAKE_HOST_WIN32)
     set(RENUT_DXC_PROGRAM "${RENUT_DXC}")
+elseif(CMAKE_HOST_APPLE)
+    set(RENUT_DXC_PROGRAM "${CMAKE_BINARY_DIR}/renut_dxc.sh")
+    file(WRITE "${RENUT_DXC_PROGRAM}"
+         "#!/bin/sh\nDYLD_LIBRARY_PATH=\"${RENUT_XENOS_RECOMP_DIR}/thirdparty/dxc-bin/lib/arm64\" exec \"${RENUT_DXC_BIN_DIR}/dxc-macos\" \"$@\"\n")
+    file(CHMOD "${RENUT_DXC_PROGRAM}" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE
+         WORLD_READ WORLD_EXECUTE)
 else()
     set(RENUT_DXC_PROGRAM "${CMAKE_BINARY_DIR}/renut_dxc.sh")
     file(WRITE "${RENUT_DXC_PROGRAM}"
@@ -187,11 +199,11 @@ function(renut_xenos_shader_cache TARGET)
         BUILD_ALWAYS ON
         USES_TERMINAL_BUILD ON)
 
-    # 1. Dump, only when the dump directory does not exist yet (a fresh
-    # checkout): the dump reads gigabytes of bundles, and an existing
-    # directory is used as it is. Delete it to dump again.
+    # 1. Dump when no completed manifest exists. Ninja can create an empty
+    # output directory before a failed command, so directory existence alone
+    # must not turn the next build into a silently empty shader cache.
     set(dump_outputs "")
-    if(NOT EXISTS "${RENUT_SHADER_DUMP_DIR}")
+    if(NOT EXISTS "${RENUT_SHADER_DUMP_DIR}/manifest.csv")
         if(NOT EXISTS "${RENUT_ASSETS_DIR}/default.xex")
             message(FATAL_ERROR "No ${RENUT_ASSETS_DIR}/default.xex to dump shaders from: set "
                                 "RENUT_ASSETS_DIR to the game's assets directory")
@@ -199,8 +211,8 @@ function(renut_xenos_shader_cache TARGET)
         set(dump_outputs "${RENUT_SHADER_DUMP_DIR}/manifest.csv")
         add_custom_command(
             OUTPUT ${dump_outputs}
-            COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tools/dump_shaders.py"
-                    --allow-problems --assets "${RENUT_ASSETS_DIR}" --out "${RENUT_SHADER_DUMP_DIR}"
+            COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/../tools/los_dump_shaders.py"
+                    --assets "${RENUT_ASSETS_DIR}" --out "${RENUT_SHADER_DUMP_DIR}"
             COMMENT "Dumping Xenos shaders from ${RENUT_ASSETS_DIR} to ${RENUT_SHADER_DUMP_DIR}"
             USES_TERMINAL VERBATIM)
     endif()

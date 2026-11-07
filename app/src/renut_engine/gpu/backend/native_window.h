@@ -13,6 +13,7 @@ namespace renut::gpu {
 // Windows: the HWND of this process's game window (the SDK's SDL window).
 // Linux: the Xlib display + window of the SDL window (plume's Linux Vulkan
 // surface is Xlib, so SDL is pinned to its X11 driver).
+// macOS: the SDL Cocoa window and its CAMetalLayer (created on the UI thread).
 bool GetNativeRenderWindow(plume::RenderWindow &out);
 
 // The game window's client area, in pixels.

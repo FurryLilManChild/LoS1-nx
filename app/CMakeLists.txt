@@ -38,8 +38,8 @@ set(LOS_SOURCES
 
 # Renut's Direct3D-level renderer (src/renut_engine), chosen at boot with sa2_renderer = "renut". Its third-party code
 # comes from sa2-nx: tools/fetch_renut_deps.py fills app/thirdparty.
-# OFF until its Direct3D map is made for this game's XDK (2.0.11626; docs/scan.md): the hooks in src/ and
-# src/renut_engine still carry Mirror of Fate's addresses.
+# The game's Direct3D map and predicated render-target handling are in docs/renderer.md.
+# Kept optional so the SDK's emulated GPU remains available as a reference.
 option(LOS_RENUT_RENDERER "Build Renut's renderer (sa2_renderer = renut)" OFF)
 if(LOS_RENUT_RENDERER)
     list(APPEND LOS_SOURCES src/los_renut_glue.cpp src/los_resource_copies.cpp src/los_render_targets.cpp
@@ -90,17 +90,39 @@ endforeach()
 
 # The settings file next to the executable: copied once, never overwritten, so local edits survive rebuilds.
 if(NOT REXGLUE_PLATFORM_SWITCH)
+    if(APPLE)
+        set(LOS_DEFAULT_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/los_mac.toml")
+    else()
+        set(LOS_DEFAULT_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/los.toml")
+    endif()
     add_custom_command(TARGET los POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_CURRENT_SOURCE_DIR}/los.toml -DDST=$<TARGET_FILE_DIR:los>/los.toml
+        COMMAND ${CMAKE_COMMAND} -DSRC=${LOS_DEFAULT_CONFIG} -DDST=$<TARGET_FILE_DIR:los>/los.toml
                 -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/copy_if_missing.cmake
         VERBATIM)
 endif()
 
-if(REXGLUE_PLATFORM_SWITCH)
-    # los_register.cpp is one generated function of ~50,000 SetFunction calls that runs once at start: GCC -O3 spends
-    # many minutes on SA2's smaller one (771-927 s, sa2-nx from sasrt-nx). -O0 compiles it in seconds.
+if(REXGLUE_PLATFORM_SWITCH OR APPLE)
+    # Registration runs once at startup. GCC and Apple Clang spend minutes at
+    # -O3 on its ~60,000 SetFunction calls (Apple Clang 17: still running after
+    # four minutes on this title). Gameplay translation units remain optimized.
     set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/generated/default/los_register.cpp" APPEND PROPERTY
                  COMPILE_OPTIONS -O0)
+    if(APPLE)
+        # Clang rejects an -O3 PCH when compiling this one file at -O0.
+        set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/generated/default/los_register.cpp"
+            PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
+        # Apple Clang also spends minutes in GlobalISel's Localizer on this
+        # huge straight-line function at -O0 (observed with macOS sample).
+        include(CheckCXXCompilerFlag)
+        check_cxx_compiler_flag("-fno-global-isel" LOS_HAS_NO_GLOBAL_ISEL)
+        if(LOS_HAS_NO_GLOBAL_ISEL)
+            set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/generated/default/los_register.cpp"
+                APPEND PROPERTY COMPILE_OPTIONS -fno-global-isel)
+        endif()
+    endif()
+endif()
+
+if(REXGLUE_PLATFORM_SWITCH)
     # The fixed settings, compiled in (src/los_app.h BuiltInConfig), and the player's los.toml, written next to the
     # NRO when it is missing (DefaultConfigFile).
     file(READ "${CMAKE_CURRENT_SOURCE_DIR}/los_switch_defaults.toml" LOS_BUILTIN_CONFIG)
