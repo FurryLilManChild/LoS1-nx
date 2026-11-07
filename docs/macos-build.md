@@ -107,7 +107,7 @@ builds, shader caches, and runtime logs are not included in the repository.
   beneath `~/.local/share/los/B13EBABEBABEBABE/4B4E0809/00000001/savegame`.
   Audio is enabled; the SDL output stream ran without persistent underruns.
 - This is an opening-level smoke test, not a complete campaign playthrough.
-  Disc 2 was still downloading at validation time. Controller input, later
+  Disc 2 was not part of this validation. Controller input, later
   chapters, DLC, and the late-game disc transition have not been tested here.
 
 Local build fixes: the registration-only translation unit compiles at `-O0`
@@ -145,20 +145,7 @@ use of the rectangle fallback. Effects in later chapters remain unverified.
 
 ## Disc data
 
-When the Disc 2 download finishes, import the completed archive with:
-
-```sh
-python3 tools/macos/import_disc2.py "$HOME/Downloads/Castlevania Lords of Shadow (Disc 2).7z"
-```
-
-The importer also accepts an ISO. It rejects unfinished downloads, verifies the
-title and root `Disc.2` marker, and installs into `assets/game_root_disc2` only after
-extraction succeeds. It never overwrites an existing Disc 2 installation. The
-app already points to that location; restart it after importing, without a rebuild.
-Both discs contain the same executable, whose XEX header says Disc 1; the
-media marker is therefore required to distinguish them.
-
-Extract a fully decompressed ISO, preserving its directory structure:
+Use the repository's existing extractor with an explicit path to each ISO:
 
 ```sh
 python3 tools/extract_iso.py '/path/to/Disc 1.iso' -o assets/game_root
@@ -171,4 +158,4 @@ to test the opening; the complete campaign requires both discs. Upstream has
 not verified the actual late-game disc swap.
 
 Game files, translated C++, shader caches, and built binaries are local outputs
-ignored by Git. The original archive is kept in the surrounding workspace.
+ignored by Git.

@@ -2,10 +2,16 @@
 
 Newest first. Each entry: what was done, what was found, what is next.
 
+## 2026-11-07: macOS contribution scope
+
+- Kept the macOS helpers focused on building, packaging, and launching the app.
+- Simplified disc setup to the repository's existing extractor with explicit
+  user-provided ISO paths. Updated the build guide and draft PR accordingly.
+
 ## 2026-11-07: Apple Silicon macOS support
 
 - Added an ARM64 macOS build using Apple Clang, app packaging and launch
-  scripts, macOS defaults, a Disc 2 importer, and `docs/macos-build.md`.
+  scripts, macOS defaults, and `docs/macos-build.md`.
   The app references the local game assets and bundles its runtime libraries.
 - Adapted the existing Renut renderer to the SDL Cocoa window and Metal layer,
   reused the SDK's Vulkan runtime discovery for plume, linked Apple frameworks,
@@ -29,13 +35,11 @@ Newest first. Each entry: what was done, what was found, what is next.
   save creation were verified. Three active-combat windows measured 51.59,
   53.39, and 59.17 FPS. These are window averages, not minimum frame rates.
   The macOS build helper and configuration now select Renut by default.
-- The importer checks the ISO's root Disc.2 marker and title because both
-  discs share an XEX with a Disc 1 header. Disc 1 rejection was verified.
 - Contribution checks passed: incremental macOS build, shell/Python syntax,
-  configuration parsing, importer rejection of Disc 1 and unfinished downloads,
-  and packaging to a temporary app. Packaged libraries match the build outputs,
-  game data stays in external symlinks, and repackaging preserves user settings.
-- Remaining validation: full campaign, later effects, Disc 2 import and swap,
+  configuration parsing, and packaging to a temporary app. Packaged libraries
+  match the build outputs, game data stays in external symlinks, and repackaging
+  preserves user settings.
+- Remaining validation: full campaign, later effects, Disc 2 gameplay and swap,
   controller input, older macOS versions, and Windows/Linux/Switch builds.
   First-use pipeline compilation can still hitch. No game data, translated
   game sources, shader caches, or binaries are included in the contribution.
