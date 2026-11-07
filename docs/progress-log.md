@@ -2,6 +2,18 @@
 
 Newest first. Each entry: what was done, what was found, what is next.
 
+## 2026-11-07: finish platform build setup before updating the PRs
+
+- Kept macOS shader-tool settings in the macOS module and loaded that module
+  before configuring the renderer. The shared forwarding loop now consumes
+  the platform's settings without naming macOS-specific variables.
+- Included the complete change in the minimal support branch so it does not
+  depend on the optional diagnostics and usability follow-up.
+- The incremental ARM64 build and Cocoa/Metal/Vulkan runtime smoke test pass.
+  XenosRecomp receives the ARM64 architecture and CMake policy setting; the
+  unused registration callback remains excluded and all 171 gameplay units
+  retain O3. Full gameplay benchmarks were not repeated.
+
 ## 2026-11-07: omit the unused registration callback from the Mac build
 
 - Corrected the earlier startup explanation: this executable registers via

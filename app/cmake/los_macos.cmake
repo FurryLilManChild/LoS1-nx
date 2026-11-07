@@ -1,5 +1,9 @@
-# App defaults and entrypoint build setup. Included only for macOS builds.
+# App defaults, host toolchain settings, and entrypoint setup. Included only for macOS builds.
 set(LOS_DEFAULT_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/los_mac.toml")
+
+# XenosRecomp has a separate CMake configure, so forward the app's macOS target settings.
+list(APPEND LOS_RENUT_XENOS_RECOMP_PLATFORM_VARIABLES
+    CMAKE_OSX_ARCHITECTURES CMAKE_OSX_DEPLOYMENT_TARGET)
 
 # This executable registers through PPCImageConfig.func_mappings in los_init.cpp.
 # The generated los_RegisterFunctions callback has no callers; compiling its
