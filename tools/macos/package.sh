@@ -5,10 +5,13 @@ REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 BUILD="$REPO/out/mac"
 APP="${LOS_APP_PATH:-$REPO/../Lords of Shadow.app}"
 BIN="$APP/Contents/MacOS"
+ICON="$REPO/app/resources/macos/AppIcon.icns"
+[[ -f "$ICON" ]] || { echo "Missing app icon: $ICON" >&2; exit 1; }
 for file in los librexruntime.dylib librexgpu-xenos.dylib vulkan/lib/libvulkan.1.dylib vulkan/lib/libMoltenVK.dylib; do
     [[ -f "$BUILD/$file" ]] || { echo "Missing build output: $BUILD/$file" >&2; exit 1; }
 done
 mkdir -p "$BIN" "$APP/Contents/Resources"
+cp -p "$ICON" "$APP/Contents/Resources/AppIcon.icns"
 cp -p "$BUILD/los" "$BUILD/librexruntime.dylib" "$BUILD/librexgpu-xenos.dylib" "$BIN/"
 ditto "$BUILD/vulkan" "$BIN/vulkan"
 python3 - "$REPO" "$APP" <<'PY'
@@ -35,6 +38,7 @@ info = {
     'CFBundleDisplayName': 'Lords of Shadow',
     'CFBundleIdentifier': 'local.lordsofshadow.recompiled',
     'CFBundleExecutable': 'los',
+    'CFBundleIconFile': 'AppIcon.icns',
     'CFBundlePackageType': 'APPL',
     'CFBundleShortVersionString': '0.1.0',
     'CFBundleVersion': '1',

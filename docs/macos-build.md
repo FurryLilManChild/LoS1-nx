@@ -51,6 +51,11 @@ the normal macOS application launch path. Direct execution from the build task
 produced a black window during testing, so it is not the recommended launcher.
 Set `LOS_APP_PATH` for both packaging and launching to use a different app location.
 
+The finished macOS icon is `app/resources/macos/AppIcon.icns`, with all standard
+and Retina sizes baked in. Packaging copies it into the app and registers it
+in `Info.plist`; no icon generation is needed during builds or packaging.
+`app/resources/macos/AppIcon.png` retains the source artwork.
+
 The build defaults to four compiler jobs on this 16 GB Mac. Set
 `LOS_BUILD_JOBS` to change the count. The first build fetches SDK dependencies,
 builds the code generator, translates the executable, and builds the game and
