@@ -357,29 +357,7 @@ uint64_t PaintedSpan(size_t chunk, uint64_t from) {
 }
 
 void PaintedDumpIfTouches(uint32_t sends_in_flight) {
-  if (!PaintedActiveProfile()) {
-    return;
-  }
-  // Wall-clock throughput complements the CPU breakdown below: blocked GPU or
-  // display work can otherwise make a cheap-looking frame misleading.
-  const uint64_t now = PaintedNow();
-  static uint64_t report_start = now;
-  static uint64_t previous_frame = now;
-  static uint64_t report_frames = 0;
-  static uint64_t longest_interval = 0;
-  longest_interval = std::max(longest_interval, now - previous_frame);
-  previous_frame = now;
-  ++report_frames;
-  if (now - report_start >= 10000000000ull) {
-    const double seconds = double(now - report_start) / 1e9;
-    REXLOG_INFO("[presenter] throughput: {} frames in {:.3f} s, {:.2f} FPS, "
-                "longest interval {:.2f} ms", report_frames, seconds,
-                double(report_frames) / seconds, double(longest_interval) / 1e6);
-    report_start = now;
-    report_frames = 0;
-    longest_interval = 0;
-  }
-  if (++g_painted_frames % 600 != 0) {
+  if (!PaintedActiveProfile() || ++g_painted_frames % 600 != 0) {
     return;
   }
   uint64_t sum = 0;

@@ -5,9 +5,4 @@ gpu_plugin = "xenos"
 # available as a fallback: set sa2_renderer = "xenos" and restart.
 sa2_renderer = "renut"
 log_level = "info"
-audio_mute = false
-
-# Keyboard works alongside a connected controller. Return = Start, Space = A,
-# WASD = movement, L/P = X/Y, Backspace = B, Q/E = triggers, 1/3 = bumpers.
-mnk_mode = true
-mnk_mouse = false
+audio_mute = true

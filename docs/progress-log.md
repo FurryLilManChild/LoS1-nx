@@ -2,66 +2,17 @@
 
 Newest first. Each entry: what was done, what was found, what is next.
 
-## 2026-11-07: isolate macOS platform integration
+## 2026-11-07: minimal macOS renderer support
 
-- Moved Cocoa/Metal window handling and Vulkan loader setup into
-  `backend/platform_macos.cpp`, selected by CMake. The existing Windows,
-  Switch, and X11 implementation is now `backend/platform_default.cpp`.
-  Callers use `backend/platform.h`; the shared renderer no longer contains
-  the Apple preprocessor branches added for this port.
-- Kept X11 driver selection in the non-macOS implementation and renamed its
-  startup initializer to `kSetDefaultX11Driver` to describe its side effect.
-- Consolidated app defaults and compiler workarounds in `cmake/los_macos.cmake`
-  and shared the DXC wrapper generation between Linux and macOS.
-- Validation passed: incremental ARM64 build, DXC wrapper invocation, and a
-  local runtime smoke test using the actual platform implementation. It created
-  a Cocoa window without an X11 override and a Vulkan/MoltenVK device on Apple
-  M2, checked repeated Metal-layer access and pixel sizing, and destroyed and
-  recreated the window. The registration unit still uses O0 without PCH or
-  GlobalISel; generated gameplay units remain at O3. Other platforms have not
-  been rebuilt, and the earlier gameplay measurements were not repeated.
-
-## 2026-11-07: macOS contribution scope
-
-- Kept the macOS helpers focused on building, packaging, and launching the app.
-- Simplified disc setup to the repository's existing extractor with explicit
-  user-provided ISO paths. Updated the build guide and draft PR accordingly.
-
-## 2026-11-07: Apple Silicon macOS support
-
-- Added an ARM64 macOS build using Apple Clang, app packaging and launch
-  scripts, macOS defaults, and `docs/macos-build.md`.
-  The app references the local game assets and bundles its runtime libraries.
-- Adapted the existing Renut renderer to the SDL Cocoa window and Metal layer,
-  reused the SDK's Vulkan runtime discovery for plume, linked Apple frameworks,
-  and selected the pinned macOS DXC binary. Rendering uses Vulkan/MoltenVK;
-  this does not introduce a new renderer or a direct Metal backend.
-- Fixed the shader dump script path and completion check, and the SDK's
-  MoltenVK ICD staging path when embedded in the game project. The generated
-  registration-only unit uses O0 without its optimized PCH or GlobalISel to
-  avoid Apple Clang spending minutes compiling it. Gameplay stays optimized.
-- Local validation: Apple M2, 16 GB, macOS 15.6, Apple Clang 17, MoltenVK 1.4.1.
-  Built an ARM64 executable, translated 59,494 game functions, and compiled a
-  shader cache from 1,634 pixel and 372 vertex shader containers.
-- Matched opening village tutorial scene, fullscreen at 1280x720 internal
-  resolution with full shadows: Renut's four 10-second windows measured 59.76,
-  58.76, 59.75, and 59.99 FPS (mean 59.57). Xenos measured 8.14, 8.16, 8.18,
-  and 8.18 FPS (mean 8.17), approximately 7.3x slower in this scene.
-  Added opt-in wall-clock throughput reporting under `present_painted_profile`
-  to compare the Xenos renderer. Alternate FIFO and FSI experiments were
-  rejected; neither improved it, and FSI produced visual corruption.
-- Opening combat, movement, direct/area attacks, jumping, pause/resume, and
-  save creation were verified. Three active-combat windows measured 51.59,
-  53.39, and 59.17 FPS. These are window averages, not minimum frame rates.
-  The macOS build helper and configuration now select Renut by default.
-- Contribution checks passed: incremental macOS build, shell/Python syntax,
-  configuration parsing, and packaging to a temporary app. Packaged libraries
-  match the build outputs, game data stays in external symlinks, and repackaging
-  preserves user settings.
-- Remaining validation: full campaign, later effects, Disc 2 gameplay and swap,
-  controller input, older macOS versions, and Windows/Linux/Switch builds.
-  First-use pipeline compilation can still hitch. No game data, translated
-  game sources, shader caches, or binaries are included in the contribution.
+- Added Cocoa/Metal window integration and Vulkan loader preparation behind
+  the platform interface, macOS shader-compiler selection, Apple Clang build
+  workarounds, and the embedded SDK's MoltenVK staging-path fix.
+- Kept the corrected shader-extractor command because a fresh build needs it.
+  Moved diagnostics, retry handling, convenience scripts, app artwork, and
+  audio/keyboard default changes into a separate follow-up contribution.
+- Validation is limited to Apple M2 / macOS 15.6: opening gameplay before the
+  platform refactor, followed by a native build and window/Vulkan smoke test.
+  Other platforms and the full campaign remain untested.
 
 ## 2026-11-03: version 0.5.0
 
