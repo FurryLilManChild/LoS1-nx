@@ -1,18 +1,12 @@
-# App defaults and Apple Clang workarounds. Included only for macOS builds.
+# App defaults and entrypoint build setup. Included only for macOS builds.
 set(LOS_DEFAULT_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/los_mac.toml")
 
-# Registration runs once at startup. Apple Clang spends minutes optimizing
-# its ~60,000 SetFunction calls. Gameplay translation units stay optimized.
-set(los_register_source "${CMAKE_CURRENT_SOURCE_DIR}/generated/default/los_register.cpp")
-set_property(SOURCE "${los_register_source}" APPEND PROPERTY COMPILE_OPTIONS -O0)
-
-# Clang rejects an -O3 PCH when compiling this one file at -O0.
-set_source_files_properties("${los_register_source}" PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
-
-# Apple Clang also spends minutes in GlobalISel's Localizer on this huge
-# straight-line function at -O0 (observed with macOS sample).
-include(CheckCXXCompilerFlag)
-check_cxx_compiler_flag("-fno-global-isel" LOS_HAS_NO_GLOBAL_ISEL)
-if(LOS_HAS_NO_GLOBAL_ISEL)
-    set_property(SOURCE "${los_register_source}" APPEND PROPERTY COMPILE_OPTIONS -fno-global-isel)
+# This executable registers through PPCImageConfig.func_mappings in los_init.cpp.
+# The generated los_RegisterFunctions callback has no callers; compiling its
+# ~60,000 calls wastes build time. Keep it out of the entrypoint target only,
+# leaving the mappings, gameplay sources, and any DLL registration untouched.
+if(TARGET los_recomp)
+    get_target_property(los_entrypoint_sources los_recomp SOURCES)
+    list(REMOVE_ITEM los_entrypoint_sources "${CMAKE_CURRENT_SOURCE_DIR}/generated/default/los_register.cpp")
+    set_property(TARGET los_recomp PROPERTY SOURCES "${los_entrypoint_sources}")
 endif()
