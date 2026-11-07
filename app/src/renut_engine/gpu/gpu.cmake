@@ -23,7 +23,7 @@ set(RENUT_SHADER_CAPTURE_DIR "${CMAKE_BINARY_DIR}/shader_capture" CACHE PATH
 
 # tools/dump_shaders.py, which runs when there are no dumped shaders yet
 # (renut_xenos_shader_cache), needs Python 3 with the xxhash module.
-if(NOT EXISTS "${RENUT_SHADER_DUMP_DIR}")
+if(NOT EXISTS "${RENUT_SHADER_DUMP_DIR}/manifest.csv")
     find_package(Python3 REQUIRED COMPONENTS Interpreter)
     execute_process(COMMAND "${Python3_EXECUTABLE}" -c "import xxhash"
                     RESULT_VARIABLE renut_xxhash_missing OUTPUT_QUIET ERROR_QUIET)
@@ -195,11 +195,11 @@ function(renut_xenos_shader_cache TARGET)
         BUILD_ALWAYS ON
         USES_TERMINAL_BUILD ON)
 
-    # 1. Dump, only when the dump directory does not exist yet (a fresh
-    # checkout): the dump reads gigabytes of bundles, and an existing
-    # directory is used as it is. Delete it to dump again.
+    # 1. Dump when no completed manifest exists. Ninja can create an empty
+    # output directory before a failed command, so directory existence alone
+    # must not turn the next build into a silently empty shader cache.
     set(dump_outputs "")
-    if(NOT EXISTS "${RENUT_SHADER_DUMP_DIR}")
+    if(NOT EXISTS "${RENUT_SHADER_DUMP_DIR}/manifest.csv")
         if(NOT EXISTS "${RENUT_ASSETS_DIR}/default.xex")
             message(FATAL_ERROR "No ${RENUT_ASSETS_DIR}/default.xex to dump shaders from: set "
                                 "RENUT_ASSETS_DIR to the game's assets directory")

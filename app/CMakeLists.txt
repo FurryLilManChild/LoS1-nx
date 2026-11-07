@@ -38,8 +38,8 @@ set(LOS_SOURCES
 
 # Renut's Direct3D-level renderer (src/renut_engine), chosen at boot with sa2_renderer = "renut". Its third-party code
 # comes from sa2-nx: tools/fetch_renut_deps.py fills app/thirdparty.
-# OFF until its Direct3D map is made for this game's XDK (2.0.11626; docs/scan.md): the hooks in src/ and
-# src/renut_engine still carry Mirror of Fate's addresses.
+# The game's Direct3D map and predicated render-target handling are in docs/renderer.md.
+# Kept optional so the SDK's emulated GPU remains available as a reference.
 option(LOS_RENUT_RENDERER "Build Renut's renderer (sa2_renderer = renut)" OFF)
 if(LOS_RENUT_RENDERER)
     list(APPEND LOS_SOURCES src/los_renut_glue.cpp src/los_resource_copies.cpp src/los_render_targets.cpp
@@ -101,8 +101,8 @@ if(NOT REXGLUE_PLATFORM_SWITCH)
 endif()
 
 if(REXGLUE_PLATFORM_SWITCH)
-    # los_register.cpp is one generated function of ~50,000 SetFunction calls that runs once at start: GCC -O3 spends
-    # many minutes on SA2's smaller one (771-927 s, sa2-nx from sasrt-nx). -O0 compiles it in seconds.
+    # Registration runs once at startup. GCC spends minutes optimizing its
+    # ~60,000 SetFunction calls. Gameplay translation units remain optimized.
     set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/generated/default/los_register.cpp" APPEND PROPERTY
                  COMPILE_OPTIONS -O0)
     # The fixed settings, compiled in (src/los_app.h BuiltInConfig), and the player's los.toml, written next to the

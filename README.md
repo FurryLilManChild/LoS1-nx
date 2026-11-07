@@ -15,6 +15,7 @@ PC).
 | --- | --- |
 | Code translation (`rexglue codegen`) | Done: 59,682 functions |
 | PC build | Playable with the native renderer (Vulkan) and with the emulated GPU |
+| macOS / Apple Silicon | Opening village tested on Apple M2 with Renut through Vulkan/MoltenVK; see [macOS build and validation notes](docs/macos-build.md) |
 | Switch build | Version 0.5.0: playable through the first levels. A port menu (- and + together) with Quality, Balanced and Performance presets and an FPS counter. At stock clocks: 960x540 and 30 fps in light and medium scenes; the heaviest fight about 22 fps with all shadows, about 28.5 with character shadows only or none |
 | Disc 2 | Written (the disc swap switches to a `game_root_disc2` folder), not yet tested at the swap |
 | Known issues | Switch: one-time stutters the first time a shader is used (a precompiled shader file helps), slowdowns in heavy scenes |

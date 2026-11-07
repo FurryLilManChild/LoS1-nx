@@ -2,6 +2,20 @@
 
 Newest first. Each entry: what was done, what was found, what is next.
 
+## 2026-11-07: deferred diagnostics and macOS workflow
+
+- Split optional work from the minimal macOS renderer contribution: opt-in
+  presenter throughput reporting, shader-extraction completion detection,
+  build/package/launch helpers, app-icon resources, and audio/keyboard defaults.
+- This follow-up depends on the minimal macOS support PR. Its added behavior
+  is isolated in one commit so it can be reviewed separately from the base.
+- Restored the previously built and tested implementations without altering
+  the core platform integration. Generated game files remain excluded.
+- Both branches pass an incremental ARM64 build and a Cocoa/Metal/Vulkan
+  runtime smoke test. The follow-up also passes shell syntax and temporary
+  packaging checks for libraries, icon, asset links, defaults, and preservation
+  of edited configuration. The earlier gameplay benchmarks were not repeated.
+
 ## 2026-11-07: minimal macOS renderer support
 
 - Added Cocoa/Metal window integration and Vulkan loader preparation behind
