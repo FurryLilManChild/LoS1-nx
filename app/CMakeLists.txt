@@ -89,40 +89,22 @@ foreach(_dep imgui renderdoc)
 endforeach()
 
 # The settings file next to the executable: copied once, never overwritten, so local edits survive rebuilds.
+set(LOS_DEFAULT_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/los.toml")
+if(APPLE)
+    include(cmake/los_macos.cmake)
+endif()
 if(NOT REXGLUE_PLATFORM_SWITCH)
-    if(APPLE)
-        set(LOS_DEFAULT_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/los_mac.toml")
-    else()
-        set(LOS_DEFAULT_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/los.toml")
-    endif()
     add_custom_command(TARGET los POST_BUILD
         COMMAND ${CMAKE_COMMAND} -DSRC=${LOS_DEFAULT_CONFIG} -DDST=$<TARGET_FILE_DIR:los>/los.toml
                 -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/copy_if_missing.cmake
         VERBATIM)
 endif()
 
-if(REXGLUE_PLATFORM_SWITCH OR APPLE)
-    # Registration runs once at startup. GCC and Apple Clang spend minutes at
-    # -O3 on its ~60,000 SetFunction calls (Apple Clang 17: still running after
-    # four minutes on this title). Gameplay translation units remain optimized.
+if(REXGLUE_PLATFORM_SWITCH)
+    # Registration runs once at startup. GCC spends minutes optimizing its
+    # ~60,000 SetFunction calls. Gameplay translation units remain optimized.
     set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/generated/default/los_register.cpp" APPEND PROPERTY
                  COMPILE_OPTIONS -O0)
-    if(APPLE)
-        # Clang rejects an -O3 PCH when compiling this one file at -O0.
-        set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/generated/default/los_register.cpp"
-            PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
-        # Apple Clang also spends minutes in GlobalISel's Localizer on this
-        # huge straight-line function at -O0 (observed with macOS sample).
-        include(CheckCXXCompilerFlag)
-        check_cxx_compiler_flag("-fno-global-isel" LOS_HAS_NO_GLOBAL_ISEL)
-        if(LOS_HAS_NO_GLOBAL_ISEL)
-            set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/generated/default/los_register.cpp"
-                APPEND PROPERTY COMPILE_OPTIONS -fno-global-isel)
-        endif()
-    endif()
-endif()
-
-if(REXGLUE_PLATFORM_SWITCH)
     # The fixed settings, compiled in (src/los_app.h BuiltInConfig), and the player's los.toml, written next to the
     # NRO when it is missing (DefaultConfigFile).
     file(READ "${CMAKE_CURRENT_SOURCE_DIR}/los_switch_defaults.toml" LOS_BUILTIN_CONFIG)

@@ -2,6 +2,25 @@
 
 Newest first. Each entry: what was done, what was found, what is next.
 
+## 2026-11-07: isolate macOS platform integration
+
+- Moved Cocoa/Metal window handling and Vulkan loader setup into
+  `backend/platform_macos.cpp`, selected by CMake. The existing Windows,
+  Switch, and X11 implementation is now `backend/platform_default.cpp`.
+  Callers use `backend/platform.h`; the shared renderer no longer contains
+  the Apple preprocessor branches added for this port.
+- Kept X11 driver selection in the non-macOS implementation and renamed its
+  startup initializer to `kSetDefaultX11Driver` to describe its side effect.
+- Consolidated app defaults and compiler workarounds in `cmake/los_macos.cmake`
+  and shared the DXC wrapper generation between Linux and macOS.
+- Validation passed: incremental ARM64 build, DXC wrapper invocation, and a
+  local runtime smoke test using the actual platform implementation. It created
+  a Cocoa window without an X11 override and a Vulkan/MoltenVK device on Apple
+  M2, checked repeated Metal-layer access and pixel sizing, and destroyed and
+  recreated the window. The registration unit still uses O0 without PCH or
+  GlobalISel; generated gameplay units remain at O3. Other platforms have not
+  been rebuilt, and the earlier gameplay measurements were not repeated.
+
 ## 2026-11-07: macOS contribution scope
 
 - Kept the macOS helpers focused on building, packaging, and launching the app.

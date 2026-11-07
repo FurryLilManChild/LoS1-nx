@@ -115,9 +115,6 @@ target_include_directories(los_renut_gpu PRIVATE
     # banjo_renut_tuning.cpp: the Switch thread helpers (threading_switch.h, through src/me/me_platform_compat.h).
     "${REXSDK_DIR}/src/core")
 target_link_libraries(los_renut_gpu PRIVATE rex::runtime)
-if(APPLE)
-    target_include_directories(los_renut_gpu PRIVATE "${REXSDK_DIR}/src/ui/vulkan")
-endif()
 if(REXGLUE_PLATFORM_SWITCH)
     # banjo-nx (2026-10-17): the deko3d back end's glue and the game shaders' GLSL package (docs/deko3d-renderer.md).
     target_sources(los_renut_gpu PRIVATE "${CMAKE_SOURCE_DIR}/src/renut_engine/gpu/banjo_renut_deko3d.cpp")

@@ -18,7 +18,7 @@
 
 #include "renut_engine/gpu/backend/backend.h"
 #include "renut_engine/gpu/log.h"
-#include "renut_engine/gpu/backend/native_window.h"
+#include "renut_engine/gpu/backend/platform.h"
 #include "renut_engine/gpu/backend/video.h"
 
 #include "host_shaders/overlay_ps.spirv.h"

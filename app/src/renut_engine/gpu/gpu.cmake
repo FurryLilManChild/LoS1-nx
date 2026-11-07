@@ -37,9 +37,6 @@ endif()
 if(NOT TARGET plume)
     add_subdirectory("${CMAKE_SOURCE_DIR}/thirdparty/plume" "${CMAKE_BINARY_DIR}/plume")
 endif()
-if(APPLE)
-    target_link_libraries(plume PUBLIC "-framework Metal" "-framework QuartzCore" "-framework AppKit")
-endif()
 
 # The shader cache is zstd-compressed and its SPIR-V is smol-v encoded. Only the
 # decoders are needed, built from the copies vendored with XenosRecomp.
@@ -68,30 +65,29 @@ set_target_properties(renut_smolv PROPERTIES POSITION_INDEPENDENT_CODE ON)
 # ---------------------------------------------------------------------------
 # DXC: the copy fetched with XenosRecomp covers Windows, Linux and Apple Silicon.
 # ---------------------------------------------------------------------------
-set(RENUT_DXC_BIN_DIR "${RENUT_XENOS_RECOMP_DIR}/thirdparty/dxc-bin/bin/x64")
+set(renut_dxc_root "${RENUT_XENOS_RECOMP_DIR}/thirdparty/dxc-bin")
 if(CMAKE_HOST_WIN32)
+    set(RENUT_DXC_BIN_DIR "${renut_dxc_root}/bin/x64")
     set(RENUT_DXC "${RENUT_DXC_BIN_DIR}/dxc.exe")
-elseif(CMAKE_HOST_APPLE)
-    set(RENUT_DXC_BIN_DIR "${RENUT_XENOS_RECOMP_DIR}/thirdparty/dxc-bin/bin/arm64")
-    set(RENUT_DXC env "DYLD_LIBRARY_PATH=${RENUT_XENOS_RECOMP_DIR}/thirdparty/dxc-bin/lib/arm64" "${RENUT_DXC_BIN_DIR}/dxc-macos")
-else()
-    # The Linux binary finds libdxcompiler next to it.
-    set(RENUT_DXC env "LD_LIBRARY_PATH=${RENUT_XENOS_RECOMP_DIR}/thirdparty/dxc-bin/lib/x64" "${RENUT_DXC_BIN_DIR}/dxc-linux")
-endif()
-# mof-nx (2026-10-24): one program for tools that take DXC as a single path (tools/deko3d_host_shader.py --dxc): on a
-# Linux host a script that sets the library path, as RENUT_DXC does.
-if(CMAKE_HOST_WIN32)
     set(RENUT_DXC_PROGRAM "${RENUT_DXC}")
-elseif(CMAKE_HOST_APPLE)
-    set(RENUT_DXC_PROGRAM "${CMAKE_BINARY_DIR}/renut_dxc.sh")
-    file(WRITE "${RENUT_DXC_PROGRAM}"
-         "#!/bin/sh\nDYLD_LIBRARY_PATH=\"${RENUT_XENOS_RECOMP_DIR}/thirdparty/dxc-bin/lib/arm64\" exec \"${RENUT_DXC_BIN_DIR}/dxc-macos\" \"$@\"\n")
-    file(CHMOD "${RENUT_DXC_PROGRAM}" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE
-         WORLD_READ WORLD_EXECUTE)
 else()
+    if(CMAKE_HOST_APPLE)
+        set(renut_dxc_arch arm64)
+        set(renut_dxc_name dxc-macos)
+        set(renut_dxc_library_env DYLD_LIBRARY_PATH)
+    else()
+        set(renut_dxc_arch x64)
+        set(renut_dxc_name dxc-linux)
+        set(renut_dxc_library_env LD_LIBRARY_PATH)
+    endif()
+    set(RENUT_DXC_BIN_DIR "${renut_dxc_root}/bin/${renut_dxc_arch}")
+    set(renut_dxc_library_dir "${renut_dxc_root}/lib/${renut_dxc_arch}")
+    set(RENUT_DXC env "${renut_dxc_library_env}=${renut_dxc_library_dir}" "${RENUT_DXC_BIN_DIR}/${renut_dxc_name}")
+    # One executable path for tools/deko3d_host_shader.py --dxc. Both Unix
+    # hosts use the same wrapper; only the binary and library variable differ.
     set(RENUT_DXC_PROGRAM "${CMAKE_BINARY_DIR}/renut_dxc.sh")
     file(WRITE "${RENUT_DXC_PROGRAM}"
-         "#!/bin/sh\nLD_LIBRARY_PATH=\"${RENUT_XENOS_RECOMP_DIR}/thirdparty/dxc-bin/lib/x64\" exec \"${RENUT_DXC_BIN_DIR}/dxc-linux\" \"$@\"\n")
+         "#!/bin/sh\n${renut_dxc_library_env}=\"${renut_dxc_library_dir}\" exec \"${RENUT_DXC_BIN_DIR}/${renut_dxc_name}\" \"$@\"\n")
     file(CHMOD "${RENUT_DXC_PROGRAM}" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE
          WORLD_READ WORLD_EXECUTE)
 endif()
@@ -270,12 +266,20 @@ endfunction()
 
 # ---------------------------------------------------------------------------
 function(renut_gpu_setup TARGET)
+    # Select the platform implementation here, keeping host-specific headers
+    # and runtime setup out of the shared renderer.
+    if(APPLE)
+        target_sources(${TARGET} PRIVATE ${RENUT_GPU_DIR}/backend/platform_macos.cpp)
+        target_include_directories(${TARGET} PRIVATE "${REXSDK_DIR}/src/ui/vulkan")
+        target_link_libraries(plume PUBLIC "-framework Metal" "-framework QuartzCore" "-framework AppKit")
+    else()
+        target_sources(${TARGET} PRIVATE ${RENUT_GPU_DIR}/backend/platform_default.cpp)
+    endif()
     target_sources(${TARGET} PRIVATE
         # The host device, the frame and the render thread.
         ${RENUT_GPU_DIR}/backend/backend.cpp
         ${RENUT_GPU_DIR}/backend/gpu_profile.cpp
         ${RENUT_GPU_DIR}/backend/memory_report.cpp
-        ${RENUT_GPU_DIR}/backend/native_window.cpp
         ${RENUT_GPU_DIR}/backend/present.cpp
         ${RENUT_GPU_DIR}/backend/queued.cpp
         ${RENUT_GPU_DIR}/backend/render_thread.cpp

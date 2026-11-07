@@ -14,7 +14,7 @@
 #include "renut_engine/gpu/banjo_renut_select.h"
 #include <rex/types.h>
 
-#include "renut_engine/gpu/backend/native_window.h"
+#include "renut_engine/gpu/backend/platform.h"
 #include "renut_engine/gpu/d3d/d3d.h"
 #include "renut_engine/gpu/guest/guest_memory.h"
 #include "renut_engine/gpu/log.h"

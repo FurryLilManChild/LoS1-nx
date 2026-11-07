@@ -119,6 +119,15 @@ Renut also needed Cocoa/Metal-layer window integration, Vulkan loader
 discovery, macOS DXC selection, Apple framework linkage, and corrected shader
 extraction. All 1,634 pixel and 372 vertex shader containers were translated.
 
+Platform integration is selected at build time: `backend/platform_macos.cpp`
+implements the window and Vulkan setup declared in `backend/platform.h`;
+the other platforms use `backend/platform_default.cpp`. App defaults and
+Apple Clang workarounds are collected in `app/cmake/los_macos.cmake`.
+After this separation, an incremental build and a local runtime smoke test
+passed, covering the Cocoa window, Metal-layer reuse, pixel sizing, window
+recreation, and creation of a Vulkan/MoltenVK device on Apple M2. The opening
+gameplay measurements above predate this refactor and were not repeated.
+
 ## Renderer selection and profiling
 
 Renut is built and selected by default on macOS. It avoids the Xenos

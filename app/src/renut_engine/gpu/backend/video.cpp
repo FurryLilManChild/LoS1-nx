@@ -30,7 +30,7 @@
 #include "renut_engine/gpu/backend/backend.h"
 #include "renut_engine/gpu/backend/gpu_profile.h"
 #include "renut_engine/gpu/log.h"
-#include "renut_engine/gpu/backend/native_window.h"
+#include "renut_engine/gpu/backend/platform.h"
 #include "renut_engine/gpu/render/pipeline.h"
 #include "renut_engine/gpu/backend/render_thread.h"
 #include "renut_engine/gpu/backend/video_internal.h"

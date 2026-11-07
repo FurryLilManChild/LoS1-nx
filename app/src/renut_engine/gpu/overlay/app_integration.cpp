@@ -13,7 +13,7 @@
 #include <rex/ui/imgui_drawer.h>
 #include <rex/ui/windowed_app_context.h>
 
-#include "renut_engine/gpu/backend/native_window.h"
+#include "renut_engine/gpu/backend/platform.h"
 #include "renut_engine/gpu/log.h"
 #include "renut_engine/gpu/overlay/overlay_drawer.h"
 #include "renut_engine/gpu/overlay/overlay_ui.h"
