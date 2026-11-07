@@ -2,6 +2,15 @@
 
 Newest first. Each entry: what was done, what was found, what is next.
 
+## 2026-11-07: select DXC explicitly for each supported host
+
+- Flattened DXC selection into Windows, macOS, and Linux cases, followed by
+  an unsupported-host error. Other systems no longer inherit Linux settings.
+- Shared executable paths and the Unix library wrapper are configured after
+  host selection; the bundled compiler choices remain unchanged.
+- The incremental ARM64 build passes, and the generated wrapper compiles
+  `present_ps.hlsl` to SPIR-V. Windows and Linux execution remain untested.
+
 ## 2026-11-07: finish platform build setup before updating the PRs
 
 - Kept macOS shader-tool settings in the macOS module and loaded that module
