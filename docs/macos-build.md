@@ -115,10 +115,11 @@ builds, shader caches, and runtime logs are not included in the repository.
   Disc 2 was not part of this validation. Controller input, later
   chapters, DLC, and the late-game disc transition have not been tested here.
 
-Local build fixes: the registration-only translation unit compiles at `-O0`
-without a PCH and without Apple LLVM GlobalISel, whose localizer otherwise
-spent minutes on the enormous registration function. Gameplay code remains
-optimized. The SDK's Vulkan staging helper now resolves its ICD file relative
+The Mac entrypoint omits the unused `los_register.cpp` callback. Startup uses
+`PPCImageConfig.func_mappings` instead; its data table contains the same 59,682
+registrations. This removes the unnecessary compilation and the former O0/PCH/
+GlobalISel workarounds. Gameplay remains optimized. The SDK's Vulkan staging
+helper now resolves its ICD file relative
 to the CMake function definition, which works when embedded in this app.
 Renut also needed Cocoa/Metal-layer window integration, Vulkan loader
 discovery, macOS DXC selection, Apple framework linkage, and corrected shader
@@ -127,11 +128,13 @@ extraction. All 1,634 pixel and 372 vertex shader containers were translated.
 Platform integration is selected at build time: `backend/platform_macos.cpp`
 implements the window and Vulkan setup declared in `backend/platform.h`;
 the other platforms use `backend/platform_default.cpp`. App defaults and
-Apple Clang workarounds are collected in `app/cmake/los_macos.cmake`.
+entrypoint source selection are collected in `app/cmake/los_macos.cmake`.
 After this separation, an incremental build and a local runtime smoke test
 passed, covering the Cocoa window, Metal-layer reuse, pixel sizing, window
 recreation, and creation of a Vulkan/MoltenVK device on Apple M2. The opening
-gameplay measurements above predate this refactor and were not repeated.
+gameplay measurements above predate this refactor and the unused-callback
+removal, and were not repeated. The rebuilt binary excludes that callback;
+the mapping data is unchanged and all 171 gameplay units still use O3.
 
 ## Renderer selection and profiling
 

@@ -2,6 +2,19 @@
 
 Newest first. Each entry: what was done, what was found, what is next.
 
+## 2026-11-07: omit the unused registration callback from the Mac build
+
+- Corrected the earlier startup explanation: this executable registers via
+  `PPCImageConfig.func_mappings` and the SDK's loop over `PPCFuncMappings`.
+  Its generated `los_RegisterFunctions` callback has no callers. The compiler
+  delay was in compiling that unused callback, not running game startup.
+- Removed only `los_register.cpp` from the macOS entrypoint target instead of
+  compiling it with O0, disabling PCH, and disabling GlobalISel. The mappings,
+  gameplay compilation, and DLL registration are unchanged.
+- The native build passes. The data table exactly matches all 59,682 callback
+  entries and is unchanged after rebuilding; the callback is absent from the
+  compile commands and binary, while all 171 gameplay units remain at O3.
+
 ## 2026-11-07: deferred diagnostics and macOS workflow
 
 - Split optional work from the minimal macOS renderer contribution: opt-in
