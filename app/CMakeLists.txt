@@ -72,6 +72,12 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     endforeach()
 endif()
 
+# Platform setup runs before the renderer so it can extend the host toolchain settings.
+set(LOS_DEFAULT_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/los.toml")
+if(APPLE)
+    include(cmake/los_macos.cmake)
+endif()
+
 if(LOS_RENUT_RENDERER)
     if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/plume/CMakeLists.txt")
         message(FATAL_ERROR "app/thirdparty is empty: run python tools/fetch_renut_deps.py first")
@@ -89,10 +95,6 @@ foreach(_dep imgui renderdoc)
 endforeach()
 
 # The settings file next to the executable: copied once, never overwritten, so local edits survive rebuilds.
-set(LOS_DEFAULT_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/los.toml")
-if(APPLE)
-    include(cmake/los_macos.cmake)
-endif()
 if(NOT REXGLUE_PLATFORM_SWITCH)
     add_custom_command(TARGET los POST_BUILD
         COMMAND ${CMAKE_COMMAND} -DSRC=${LOS_DEFAULT_CONFIG} -DDST=$<TARGET_FILE_DIR:los>/los.toml
