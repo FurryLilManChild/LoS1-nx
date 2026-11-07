@@ -2,6 +2,17 @@
 
 Newest first. Each entry: what was done, what was found, what is next.
 
+## 2026-11-07: select application setup explicitly by target platform
+
+- Added explicit Switch, Windows, macOS, and Linux cases before renderer
+  setup, with an error for unsupported targets. This uses the target platform;
+  DXC selection continues to use the build host for cross-compilation.
+- Windows and Linux retain `los.toml`; macOS uses its setup module; Switch
+  retains its existing embedded configurations in the target setup below.
+- The incremental ARM64 build passes. Generated build commands still select
+  `los_mac.toml`, forward ARM64 to XenosRecomp, and exclude the unused callback.
+  Other target builds remain untested.
+
 ## 2026-11-07: select DXC explicitly for each supported host
 
 - Flattened DXC selection into Windows, macOS, and Linux cases, followed by

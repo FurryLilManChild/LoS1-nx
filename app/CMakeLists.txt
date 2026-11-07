@@ -72,10 +72,17 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     endforeach()
 endif()
 
-# Platform setup runs before the renderer so it can extend the host toolchain settings.
-set(LOS_DEFAULT_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/los.toml")
-if(APPLE)
+# Select target defaults and platform setup before configuring the renderer.
+if(REXGLUE_PLATFORM_SWITCH)
+    # Switch embeds its configurations in the target setup below.
+elseif(WIN32)
+    set(LOS_DEFAULT_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/los.toml")
+elseif(APPLE)
     include(cmake/los_macos.cmake)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(LOS_DEFAULT_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/los.toml")
+else()
+    message(FATAL_ERROR "Unsupported target platform: ${CMAKE_SYSTEM_NAME}")
 endif()
 
 if(LOS_RENUT_RENDERER)
