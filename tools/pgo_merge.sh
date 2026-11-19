@@ -19,7 +19,7 @@ fi
 n=0
 for f in "$STREAMS"/los_pgo_*.stream; do
   echo "merging $(basename "$f") ($(du -h "$f" | cut -f1))"
-  (cd "$REPO" && WINEDEBUG=-all /usr/lib/wine/wine64 "$TOOL" merge-stream "$f")
+  (cd "$REPO" && WINEDEBUG=-all ${WINE_BIN:-/opt/wine-stable/bin/wine} "$TOOL" merge-stream "$f")
   n=$((n + 1))
 done
 count=$(find "$OUT" -name '*.gcda' | wc -l)

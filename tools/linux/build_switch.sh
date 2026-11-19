@@ -21,13 +21,15 @@ case "${1:-}" in
 setup)
   src="${2:?folder with dkp_a64.tar and dkp_rest.tar}"
   command -v wine >/dev/null || { apt-get update && apt-get install -y wine64 zstd; }
+  # 2026-11-19: Ubuntu's wine 9.0 crashes on this cloud kernel (wineserver: "free(): invalid pointer"); WineHQ's
+  # wine-stable 11 (/opt/wine-stable, from dl.winehq.org) works. WINE_BIN picks another one.
   mkdir -p $W && tar -xf "$src/dkp_a64.tar" -C $W && tar -xf "$src/dkp_rest.tar" -C $W
   rm -rf $L && mkdir -p $L/devkitA64/bin $L/tools/bin
   for d in libnx portlibs cmake; do ln -s $W/$d $L/$d; done
   for d in $W/devkitA64/*; do n=$(basename "$d"); [ "$n" = bin ] || ln -s "$d" $L/devkitA64/$n; done
   for f in $W/devkitA64/bin/*.exe $W/tools/bin/*.exe; do
     n=$(basename "$f" .exe); dir=$L/devkitA64/bin; [[ "$f" == $W/tools/* ]] && dir=$L/tools/bin
-    printf '#!/bin/sh\nexport WINEDEBUG=-all\nexec /usr/lib/wine/wine64 %s "$@"\n' "$f" > $dir/$n; chmod +x $dir/$n
+    printf '#!/bin/sh\nexport WINEDEBUG=-all\nexec ${WINE_BIN:-/opt/wine-stable/bin/wine} %s "$@"\n' "$f" > $dir/$n; chmod +x $dir/$n
   done
   for n in aarch64-none-elf-gcc aarch64-none-elf-g++ aarch64-none-elf-c++; do
     cat > $L/devkitA64/bin/$n <<WRAP
@@ -35,7 +37,7 @@ setup)
 export WINEDEBUG=-all
 mf=""; prev=""
 for a in "\$@"; do [ "\$prev" = "-MF" ] && mf="\$a"; prev="\$a"; done
-/usr/lib/wine/wine64 $W/devkitA64/bin/$n.exe "\$@"; rc=\$?
+${WINE_BIN:-/opt/wine-stable/bin/wine} $W/devkitA64/bin/$n.exe "\$@"; rc=\$?
 [ -n "\$mf" ] && [ -f "\$mf" ] && sed -i 's#Z:/#/#g' "\$mf"
 exit \$rc
 WRAP
