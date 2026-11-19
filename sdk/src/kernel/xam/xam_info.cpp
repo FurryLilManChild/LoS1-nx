@@ -353,10 +353,18 @@ u32 XamSwapDisc_entry(u32 disc_number, u32 event_handle, u32 /*strings*/) {
     if (auto ev = REX_KERNEL_OBJECTS()->LookupObject<rex::system::XEvent>(event_handle)) {
       ev->Set(0, false);
       signaled = true;
-    } else if (event_handle >= 0x40000000u) {
+    } else {
+      // Any guest address: the KEVENT the game's ObReferenceObjectByHandle returned lives in the kernel's object
+      // area (0x3002E018 on Mark's console, 2026-11-19: the first fix only looked at 0x40000000 and up and missed it).
+      // A KEVENT's dispatcher header type is 0 (notification) or 1 (synchronization).
       auto* kevent = REX_KERNEL_MEMORY()->TranslateVirtual<rex::system::X_KEVENT*>(event_handle);
-      rex::kernel::xboxkrnl::xeKeSetEvent(kevent, 1, 0);
-      signaled = true;
+      if (kevent && kevent->header.type <= 1) {
+        rex::kernel::xboxkrnl::xeKeSetEvent(kevent, 1, 0);
+        signaled = true;
+      } else if (kevent) {
+        REXKRNL_WARN("XamSwapDisc({}): {:08X} is not an event (dispatcher type {})", (uint32_t)disc_number,
+                     (uint32_t)event_handle, (uint32_t)kevent->header.type);
+      }
     }
   }
   REXKRNL_INFO("XamSwapDisc({}): event {:08X} {}", (uint32_t)disc_number, (uint32_t)event_handle,
