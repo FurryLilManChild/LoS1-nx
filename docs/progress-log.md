@@ -2,6 +2,19 @@
 
 Newest first. Each entry: what was done, what was found, what is next.
 
+## 2026-11-19: version 0.5.1, the disc swap fixed
+
+- A player reached disc 2 and the game stayed on "Insert Disc 2". With his save, Mark's console log showed the swap
+  done (`XamSwapDisc(2): game: and d: now \Device\Cdrom1`) and then nothing: the game waited on its event.
+- Cause: the game's XAM wrapper (sub_824BFD30) passes the event through ObReferenceObjectByHandle (sub_824BFCE8) and
+  hands XamSwapDisc the KEVENT itself, not a handle. The handle lookup found nothing, the event was never set. The
+  first fix looked for the KEVENT only at 0x40000000 and up; it was at 0x3002E018 (the kernel's object area). Fixed:
+  any guest address whose dispatcher header is an event (type 0 or 1) is set, logged as `XamSwapDisc(2): event ... set`.
+- Mark's console with the player's save: the event set and the disc 2 chapter loaded. Released as 0.5.1
+  (`out/nx/elf/los_0.5.1.elf`, the 0.5.0 code and this fix).
+- Cloud build: Ubuntu's wine 9.0 crashes on the current cloud kernel (wineserver: "free(): invalid pointer"); WineHQ's
+  wine-stable 11 in /opt/wine-stable works (tools/linux/build_switch.sh, WINE_BIN).
+
 ## 2026-11-03: version 0.5.0
 
 - Release 0.5.0 (`out/nx/elf/los_0.5.0.elf`): the codegen of batch 2 with round 1 of the post-codegen steps (round 2
