@@ -11,6 +11,7 @@
 
 #include <rex/kernel/xam/module.h>
 #include <rex/kernel/xam/private.h>
+#include <rex/kernel/xboxkrnl/threading.h>
 #include <rex/logging.h>
 #include <rex/hook.h>
 #include <rex/types.h>
@@ -342,10 +343,24 @@ u32 XamSwapDisc_entry(u32 disc_number, u32 event_handle, u32 /*strings*/) {
     fs->RegisterSymbolicLink("d:", target);
   }
   REXKRNL_INFO("XamSwapDisc({}): game: and d: now {}", (uint32_t)disc_number, target);
+  // los1-nx (2026-11-19): the second argument is NOT a handle. The game's XAM wrapper (sub_824BFD30) passes the
+  // event's handle through ObReferenceObjectByHandle (sub_824BFCE8) and hands XamSwapDisc the guest KEVENT itself.
+  // The first version looked it up as a handle, found nothing, and never set it: the game waited on "Insert Disc 2"
+  // forever (Mark's console run with a player's disc-2 save, los_030.log: the swap logged, then nothing). Set the
+  // KEVENT at that address; a real handle still works.
+  bool signaled = false;
   if (event_handle) {
-    if (auto ev = REX_KERNEL_OBJECTS()->LookupObject<rex::system::XEvent>(event_handle))
+    if (auto ev = REX_KERNEL_OBJECTS()->LookupObject<rex::system::XEvent>(event_handle)) {
       ev->Set(0, false);
+      signaled = true;
+    } else if (event_handle >= 0x40000000u) {
+      auto* kevent = REX_KERNEL_MEMORY()->TranslateVirtual<rex::system::X_KEVENT*>(event_handle);
+      rex::kernel::xboxkrnl::xeKeSetEvent(kevent, 1, 0);
+      signaled = true;
+    }
   }
+  REXKRNL_INFO("XamSwapDisc({}): event {:08X} {}", (uint32_t)disc_number, (uint32_t)event_handle,
+               signaled ? "set" : "NOT set (no event)");
   return X_STATUS_SUCCESS;
 }
 
